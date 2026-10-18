@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id" class="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
-<title>SI-KARHUTLA ΓÇö Pemantauan Titik Panas Indonesia (BMKG &amp; Satelit)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SI-KARHUTLA — Pemantauan Titik Panas Indonesia (BMKG &amp; Satelit)</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
@@ -63,16 +63,16 @@ tailwind.config = {
       </div>
       <div>
         <h1 class="text-lg md:text-xl font-bold text-white tracking-wide flex items-center gap-2 flex-wrap">
-          SI-KARHUTLA ┬╖ PUSAT INFORMASI TITIK PANAS
+          SI-KARHUTLA · PUSAT INFORMASI TITIK PANAS
           <span class="text-[10px] font-semibold bg-red-950 text-red-400 border border-red-800/60 px-2 py-0.5 rounded-full uppercase">BMKG + Satelit</span>
         </h1>
-        <p class="text-xs text-slate-400">Deteksi kebakaran hutan &amp; lahan, arah asap, cuaca dan kualitas udara ΓÇö bahasa sederhana untuk semua orang</p>
+        <p class="text-xs text-slate-400">Deteksi kebakaran hutan &amp; lahan, arah asap, cuaca dan kualitas udara — bahasa sederhana untuk semua orang</p>
       </div>
     </div>
 
     <div class="flex items-center gap-2 text-xs flex-wrap">
       <span id="dataStatus" class="px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-300 font-medium flex items-center gap-2">
-        <i class="fa-solid fa-circle-notch fa-spin text-amber-400"></i> Memuat dataΓÇª
+        <i class="fa-solid fa-circle-notch fa-spin text-amber-400"></i> Memuat data…
       </span>
       <button onclick="refreshLive()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl font-semibold transition flex items-center gap-2">
         <i class="fa-solid fa-rotate text-cyan-400"></i> Segarkan Data
@@ -96,22 +96,22 @@ tailwind.config = {
   <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
     <div class="metric p-4">
       <div class="flex justify-between text-slate-400 text-xs"><span>Titik panas terdeteksi</span><i class="fa-solid fa-fire text-red-500"></i></div>
-      <div class="text-3xl font-black text-red-500 mt-1" id="mTotal">ΓÇö</div>
+      <div class="text-3xl font-black text-red-500 mt-1" id="mTotal">—</div>
       <div class="text-[10px] text-slate-500 mt-1" id="mTotalSub">dari citra satelit</div>
     </div>
     <div class="metric p-4">
       <div class="flex justify-between text-slate-400 text-xs"><span>Berisiko tinggi</span><i class="fa-solid fa-triangle-exclamation text-amber-500"></i></div>
-      <div class="text-3xl font-black text-amber-400 mt-1" id="mHigh">ΓÇö</div>
-      <div class="text-[10px] text-slate-500 mt-1">kepastian 9/10 ΓÇö hampir pasti api</div>
+      <div class="text-3xl font-black text-amber-400 mt-1" id="mHigh">—</div>
+      <div class="text-[10px] text-slate-500 mt-1">kepastian 9/10 — hampir pasti api</div>
     </div>
     <div class="metric p-4">
       <div class="flex justify-between text-slate-400 text-xs"><span>Wilayah paling banyak</span><i class="fa-solid fa-map-location-dot text-cyan-400"></i></div>
-      <div class="text-base font-bold text-cyan-300 mt-1 leading-tight" id="mProv">ΓÇö</div>
+      <div class="text-base font-bold text-cyan-300 mt-1 leading-tight" id="mProv">—</div>
       <div class="text-[10px] text-slate-500 mt-1" id="mProvSub">provinsi terbanyak titik panas</div>
     </div>
     <div class="metric p-4">
       <div class="flex justify-between text-slate-400 text-xs"><span>Status nasional</span><i class="fa-solid fa-shield-halved text-red-400"></i></div>
-      <div class="mt-1" id="mStatus">ΓÇö</div>
+      <div class="mt-1" id="mStatus">—</div>
       <div class="text-[10px] text-slate-500 mt-1" id="mStatusSub">berdasarkan jumlah &amp; kepastian titik</div>
     </div>
     <div class="metric p-4 col-span-2 md:col-span-1">
@@ -157,17 +157,17 @@ tailwind.config = {
 
         <div class="absolute top-3 left-11 z-[500] glass rounded-xl p-3 text-[11px] leading-relaxed max-w-[230px]">
           <div class="font-bold text-slate-200 mb-1.5 uppercase tracking-wider text-[10px]">Cara membaca peta</div>
-          <div class="flex items-center gap-2 mb-1"><span class="legend-swatch" style="background:#ef4444"></span><span class="text-slate-300">Merah ┬╖ hampir pasti api (9/10)</span></div>
-          <div class="flex items-center gap-2 mb-1"><span class="legend-swatch" style="background:#f59e0b"></span><span class="text-slate-300">Kuning ┬╖ kemungkinan besar (8/10)</span></div>
-          <div class="flex items-center gap-2 mb-1"><span class="legend-swatch" style="background:#38bdf8"></span><span class="text-slate-300">Biru ┬╖ perlu dicek petugas (7/10)</span></div>
-          <div class="flex items-center gap-2 mb-1"><span class="legend-swatch" style="background:#f97316;border-radius:3px;height:9px"></span><span class="text-slate-300">Jingga ┬╖ perkiraan jalur asap</span></div>
+          <div class="flex items-center gap-2 mb-1"><span class="legend-swatch" style="background:#ef4444"></span><span class="text-slate-300">Merah · hampir pasti api (9/10)</span></div>
+          <div class="flex items-center gap-2 mb-1"><span class="legend-swatch" style="background:#f59e0b"></span><span class="text-slate-300">Kuning · kemungkinan besar (8/10)</span></div>
+          <div class="flex items-center gap-2 mb-1"><span class="legend-swatch" style="background:#38bdf8"></span><span class="text-slate-300">Biru · perlu dicek petugas (7/10)</span></div>
+          <div class="flex items-center gap-2 mb-1"><span class="legend-swatch" style="background:#f97316;border-radius:3px;height:9px"></span><span class="text-slate-300">Jingga · perkiraan jalur asap</span></div>
           <div class="text-slate-400 mt-1.5 border-t border-slate-700 pt-1.5">Bola bertuliskan angka = kumpulan titik. Klik untuk memperbesar.</div>
         </div>
 
         <div id="mapLoading" class="absolute inset-0 z-[600] bg-slate-950/70 flex items-center justify-center">
           <div class="text-center text-slate-300">
             <i class="fa-solid fa-spinner fa-spin text-2xl text-amber-400"></i>
-            <div class="text-xs mt-2">Mengambil data titik panasΓÇª</div>
+            <div class="text-xs mt-2">Mengambil data titik panas…</div>
           </div>
         </div>
       </div>
@@ -184,9 +184,9 @@ tailwind.config = {
           <div class="flex justify-between items-start gap-2">
             <div>
               <h4 class="font-bold text-white text-sm leading-tight" id="dLoc">Klik salah satu titik di peta</h4>
-              <p class="text-[11px] text-cyan-400 font-mono mt-1" id="dCoord">ΓÇö</p>
+              <p class="text-[11px] text-cyan-400 font-mono mt-1" id="dCoord">—</p>
             </div>
-            <span class="chip r-low" id="dRisk">ΓÇö</span>
+            <span class="chip r-low" id="dRisk">—</span>
           </div>
 
           <div class="text-[11px] bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-slate-300 leading-relaxed" id="dMeaning">
@@ -194,12 +194,12 @@ tailwind.config = {
           </div>
 
           <div class="grid grid-cols-2 gap-2 text-xs">
-            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Suhu</span><strong class="text-amber-400 text-sm" id="dTemp">ΓÇö</strong></div>
-            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Kelembaban</span><strong class="text-cyan-400 text-sm" id="dHum">ΓÇö</strong></div>
-            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Angin</span><strong class="text-emerald-400 text-sm" id="dWind">ΓÇö</strong></div>
-            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Jarak pandang</span><strong class="text-indigo-300 text-sm" id="dVis">ΓÇö</strong></div>
-            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Udara (PM2.5)</span><strong class="text-orange-300 text-sm" id="dPm">ΓÇö</strong></div>
-            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Indeks kualitas udara</span><strong class="text-red-300 text-sm" id="dAqi">ΓÇö</strong></div>
+            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Suhu</span><strong class="text-amber-400 text-sm" id="dTemp">—</strong></div>
+            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Kelembaban</span><strong class="text-cyan-400 text-sm" id="dHum">—</strong></div>
+            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Angin</span><strong class="text-emerald-400 text-sm" id="dWind">—</strong></div>
+            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Jarak pandang</span><strong class="text-indigo-300 text-sm" id="dVis">—</strong></div>
+            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Udara (PM2.5)</span><strong class="text-orange-300 text-sm" id="dPm">—</strong></div>
+            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Indeks kualitas udara</span><strong class="text-red-300 text-sm" id="dAqi">—</strong></div>
           </div>
 
           <div class="text-xs border-t border-slate-800 pt-2.5">
@@ -209,7 +209,7 @@ tailwind.config = {
         </div>
 
         <div class="mt-3 text-[10px] text-slate-500 text-center leading-relaxed">
-          Data titik panas: BMKG CEWS ┬╖ Cuaca &amp; udara: Open-Meteo (langsung, tanpa perantara)
+          Data titik panas: BMKG CEWS · Cuaca &amp; udara: Open-Meteo (langsung, tanpa perantara)
         </div>
       </div>
     </div>
@@ -242,7 +242,7 @@ tailwind.config = {
         <p class="text-xs text-slate-400">Cari nama kabupaten atau provinsi untuk melihat titik di daerah Anda</p>
       </div>
       <div class="flex flex-wrap items-center gap-2 text-xs">
-        <input id="q" oninput="setPage(1)" placeholder="Cari provinsi / kabupatenΓÇª" class="bg-slate-950 border border-slate-700 text-slate-200 px-3 py-1.5 rounded-lg focus:outline-none focus:border-amber-500 w-44">
+        <input id="q" oninput="setPage(1)" placeholder="Cari provinsi / kabupaten…" class="bg-slate-950 border border-slate-700 text-slate-200 px-3 py-1.5 rounded-lg focus:outline-none focus:border-amber-500 w-44">
         <select id="fProv" onchange="setPage(1)" class="bg-slate-950 border border-slate-700 text-slate-200 px-2.5 py-1.5 rounded-lg focus:outline-none focus:border-amber-500"><option value="">Semua provinsi</option></select>
         <select id="fRisk" onchange="setPage(1)" class="bg-slate-950 border border-slate-700 text-slate-200 px-2.5 py-1.5 rounded-lg focus:outline-none focus:border-amber-500">
           <option value="">Semua tingkat</option><option value="9">Risiko tinggi</option><option value="8">Risiko sedang</option><option value="7">Perlu dicek</option>
@@ -265,10 +265,10 @@ tailwind.config = {
     </div>
 
     <div class="p-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-      <span id="pgInfo">ΓÇö</span>
+      <span id="pgInfo">—</span>
       <div class="flex gap-2">
-        <button onclick="setPage(page-1)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg disabled:opacity-40" id="pgPrev">ΓÇ╣ Sebelumnya</button>
-        <button onclick="setPage(page+1)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg disabled:opacity-40" id="pgNext">Berikutnya ΓÇ║</button>
+        <button onclick="setPage(page-1)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg disabled:opacity-40" id="pgPrev">‹ Sebelumnya</button>
+        <button onclick="setPage(page+1)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg disabled:opacity-40" id="pgNext">Berikutnya ›</button>
       </div>
     </div>
   </div>
@@ -299,8 +299,8 @@ tailwind.config = {
 
 <footer class="border-t border-slate-800 bg-slate-950 py-5 mt-4">
   <div class="max-w-7xl mx-auto px-4 text-[11px] text-slate-500 flex flex-wrap gap-x-6 gap-y-2 justify-between">
-    <div>Sumber data: <span class="text-slate-400">BMKG CEWS</span> (deteksi titik panas satelit VIIRS/MODIS ΓÇö NOAA-20, SNPP, Terra, Aqua) ┬╖ <span class="text-slate-400">Open-Meteo</span> (cuaca, jarak pandang, kualitas udara) ┬╖ <span class="text-slate-400">OpenStreetMap / CARTO / Esri</span> (peta dasar)</div>
-    <div id="footStamp">ΓÇö</div>
+    <div>Sumber data: <span class="text-slate-400">BMKG CEWS</span> (deteksi titik panas satelit VIIRS/MODIS — NOAA-20, SNPP, Terra, Aqua) · <span class="text-slate-400">Open-Meteo</span> (cuaca, jarak pandang, kualitas udara) · <span class="text-slate-400">OpenStreetMap / CARTO / Esri</span> (peta dasar)</div>
+    <div id="footStamp">—</div>
   </div>
 </footer>
 
@@ -313,7 +313,7 @@ tailwind.config = {
     </div>
     <div id="aiBody" class="text-sm text-slate-200 space-y-3 leading-relaxed max-h-[60vh] overflow-y-auto scroll pr-2"></div>
     <div class="flex justify-between items-center pt-3 border-t border-slate-800 text-[10px] text-slate-500">
-      <span id="aiMode">ΓÇö</span>
+      <span id="aiMode">—</span>
       <div class="flex gap-2">
         <button onclick="speakAI()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold flex items-center gap-2"><i class="fa-solid fa-volume-high text-amber-400"></i> Putar suara</button>
         <button onclick="closeAI()" class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-semibold">Tutup</button>
@@ -349,7 +349,7 @@ tailwind.config = {
 
 <script>
 /* ============================================================
-   SI-KARHUTLA ΓÇö peta titik panas Indonesia
+   SI-KARHUTLA — peta titik panas Indonesia
    Sumber data : BMKG CEWS (snapshot + refresh live via proxy)
    Cuaca/udara : Open-Meteo (CORS terbuka, tanpa API key)
    ============================================================ */
@@ -497,7 +497,7 @@ function popupHTML(p, i) {
   const r = RISK[p.conf] || RISK[7];
   return `<div class="p-0.5 min-w-[210px]">
     <div class="font-bold text-[13px] text-white mb-1">${esc(tc(p.kab))}, ${esc(tc(p.prov))}</div>
-    <div class="text-slate-400 mb-2">${esc(tc(p.kec))} ┬╖ ${esc(p.time)} WIB ┬╖ ${esc(p.sat)}</div>
+    <div class="text-slate-400 mb-2">${esc(tc(p.kec))} · ${esc(p.time)} WIB · ${esc(p.sat)}</div>
     <span class="chip ${r.cls}">${r.label} (${p.conf}/10)</span>
     <div class="mt-2 text-slate-300">Koordinat: <span class="font-mono text-cyan-300">${p.lat.toFixed(4)}, ${p.lon.toFixed(4)}</span></div>
     <button onclick="selectPoint(window.__PT[${i}])" class="mt-2 w-full bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold py-1.5 rounded-lg">Lihat detail &amp; arah asap</button>
@@ -595,7 +595,7 @@ function renderWind() {
     const blowTo = (g.dir + 180) % 360;
     const icon = L.divIcon({ className:'', html:`<i class="fa-solid fa-arrow-up wind-arrow" style="transform:rotate(${blowTo}deg)"></i>`, iconSize:[18,18], iconAnchor:[9,9] });
     L.marker([g.lat, g.lon], { icon, interactive:true })
-      .bindTooltip(`${Math.round(g.spd)} km/j ΓÇö angin dari ${dirFrom(g.dir)} (berhembus ke ${dirTo(g.dir)})`, { direction:'top' })
+      .bindTooltip(`${Math.round(g.spd)} km/j — angin dari ${dirFrom(g.dir)} (berhembus ke ${dirTo(g.dir)})`, { direction:'top' })
       .addTo(windLayer);
   }
 }
@@ -607,19 +607,19 @@ function selectPoint(p) {
   const r = RISK[p.conf] || RISK[7];
   document.getElementById('dLoc').textContent = `${tc(p.kec)}, ${tc(p.kab)}`;
   document.getElementById('dLoc').title = tc(p.prov);
-  document.getElementById('dCoord').textContent = `${p.lat.toFixed(4)}, ${p.lon.toFixed(4)} ┬╖ ${tc(p.prov)}`;
+  document.getElementById('dCoord').textContent = `${p.lat.toFixed(4)}, ${p.lon.toFixed(4)} · ${tc(p.prov)}`;
   const chip = document.getElementById('dRisk');
-  chip.className = 'chip ' + r.cls; chip.textContent = `${r.label} ┬╖ ${p.conf}/10`;
+  chip.className = 'chip ' + r.cls; chip.textContent = `${r.label} · ${p.conf}/10`;
   document.getElementById('dMeaning').innerHTML =
     `Deteksi <b class="text-white">${esc(p.sat)}</b> pukul <b class="text-white">${esc(p.time)} WIB</b>. ` +
-    `Tingkat kepastian <b class="text-white">${p.conf}/10</b> ΓÇö ${r.plain}.`;
-  document.getElementById('dTemp').textContent = 'ΓÇª';
-  document.getElementById('dHum').textContent = 'ΓÇª';
-  document.getElementById('dWind').textContent = 'ΓÇª';
-  document.getElementById('dVis').textContent = 'ΓÇª';
-  document.getElementById('dPm').textContent = 'ΓÇª';
-  document.getElementById('dAqi').textContent = 'ΓÇª';
-  document.getElementById('dSmoke').textContent = 'Mengambil data cuacaΓÇª';
+    `Tingkat kepastian <b class="text-white">${p.conf}/10</b> — ${r.plain}.`;
+  document.getElementById('dTemp').textContent = '…';
+  document.getElementById('dHum').textContent = '…';
+  document.getElementById('dWind').textContent = '…';
+  document.getElementById('dVis').textContent = '…';
+  document.getElementById('dPm').textContent = '…';
+  document.getElementById('dAqi').textContent = '…';
+  document.getElementById('dSmoke').textContent = 'Mengambil data cuaca…';
   map.panTo([p.lat, p.lon]);
   if (map.getZoom() < 7) map.setView([p.lat, p.lon], 7, { animate:true });
   drawPlume(p);
@@ -631,7 +631,7 @@ function drawPlume(p, windOverride) {
   const w = windOverride || windAt(p.lat, p.lon);
   if (!w) {
     document.getElementById('dSmoke').textContent =
-      'Data angin belum tersedia ΓÇö perkiraan jalur asap akan muncul otomatis setelah data angin dimuat.';
+      'Data angin belum tersedia — perkiraan jalur asap akan muncul otomatis setelah data angin dimuat.';
     return;
   }
   const src = windOverride ? 'di titik ini' : 'di sekitar titik ini';
@@ -646,7 +646,7 @@ function drawPlume(p, windOverride) {
   const right = off(rad + spread, km * .72);
   const poly = L.polygon([[p.lat,p.lon], left, apex, right],
     { color:'#fb923c', weight:1.5, fillColor:'#f97316', fillOpacity:.22 }).addTo(plumeLayer);
-  poly.bindTooltip(`Perkiraan asap: ke ${dirFrom(blowTo)} ┬▒ ${Math.round(km)} km (${Math.round(w.spd)} km/j)`);
+  poly.bindTooltip(`Perkiraan asap: ke ${dirFrom(blowTo)} ± ${Math.round(km)} km (${Math.round(w.spd)} km/j)`);
   const arrow = L.divIcon({ className:'', html:`<i class="fa-solid fa-arrow-up wind-arrow" style="transform:rotate(${blowTo}deg);font-size:20px"></i>`, iconSize:[22,22], iconAnchor:[11,11] });
   L.marker([p.lat, p.lon], { icon:arrow, interactive:false }).addTo(plumeLayer);
   if (document.getElementById('ckPlume').checked) map.addLayer(plumeLayer);
@@ -668,20 +668,20 @@ async function loadWeather(p) {
   }
   if (!data || selected !== p) return;
   const c = data.w.current;
-  document.getElementById('dTemp').textContent = c.temperature_2m + ' ┬░C';
+  document.getElementById('dTemp').textContent = c.temperature_2m + ' °C';
   document.getElementById('dHum').textContent = c.relative_humidity_2m + '%';
   document.getElementById('dWind').textContent = Math.round(c.wind_speed_10m) + ' km/j ' + dirFrom(c.wind_direction_10m);
   document.getElementById('dVis').textContent = (c.visibility/1000).toFixed(1) + ' km';
   const a = data.aqi && data.aqi.current;
-  document.getElementById('dPm').textContent = a ? a.pm2_5.toFixed(1) + ' ┬╡g/m┬│' : 'ΓÇö';
-  document.getElementById('dAqi').textContent = a ? aqiLabel(a.us_aqi) : 'ΓÇö';
-  document.getElementById('mWeather').textContent = `${c.temperature_2m}┬░C ┬╖ ${a ? 'AQI ' + Math.round(a.us_aqi) : 'ΓÇö'}`;
+  document.getElementById('dPm').textContent = a ? a.pm2_5.toFixed(1) + ' µg/m³' : '—';
+  document.getElementById('dAqi').textContent = a ? aqiLabel(a.us_aqi) : '—';
+  document.getElementById('mWeather').textContent = `${c.temperature_2m}°C · ${a ? 'AQI ' + Math.round(a.us_aqi) : '—'}`;
   document.getElementById('mWeatherSub').textContent =
-    `${tc(p.kab)} ┬╖ ${c.relative_humidity_2m}% lembab ┬╖ angin ${Math.round(c.wind_speed_10m)} km/j ${dirFrom(c.wind_direction_10m)}`;
+    `${tc(p.kab)} · ${c.relative_humidity_2m}% lembab · angin ${Math.round(c.wind_speed_10m)} km/j ${dirFrom(c.wind_direction_10m)}`;
   drawPlume(p, { spd: +(+c.wind_speed_10m).toFixed(1), dir: Math.round(c.wind_direction_10m) });
 }
 function aqiLabel(v) {
-  if (v == null) return 'ΓÇö';
+  if (v == null) return '—';
   if (v <= 50) return Math.round(v) + ' (Baik)';
   if (v <= 100) return Math.round(v) + ' (Sedang)';
   if (v <= 150) return Math.round(v) + ' (Tidak sehat untuk kelompok sensitif)';
@@ -699,8 +699,8 @@ function renderMetrics() {
   document.getElementById('mHigh').textContent = fmt(hi);
 
   const top = STATE.provCounts[0];
-  document.getElementById('mProv').textContent = top ? tc(top.name) : 'ΓÇö';
-  document.getElementById('mProvSub').textContent = top ? fmt(top.n) + ' titik ┬╖ ' + fmt(top.hi) + ' berisiko tinggi' : '';
+  document.getElementById('mProv').textContent = top ? tc(top.name) : '—';
+  document.getElementById('mProvSub').textContent = top ? fmt(top.n) + ' titik · ' + fmt(top.hi) + ' berisiko tinggi' : '';
 
   let status = { t:'AMAN', c:'bg-emerald-950 text-emerald-300 border-emerald-800', sub:'jumlah titik panas rendah' };
   if (total >= 4000 || hi >= 400) status = { t:'BAHAYA TINGGI', c:'bg-red-950 text-red-300 border-red-800', sub:'banyak titik panas & kepastian tinggi' };
@@ -712,18 +712,18 @@ function renderMetrics() {
   const delta = prev ? Math.round(((total - prev) / prev) * 100) : null;
   const st = document.getElementById('dataStatus');
   if (STATE.live) {
-    st.innerHTML = `<i class="fa-solid fa-circle text-emerald-400 text-[8px]"></i> Data langsung BMKG ┬╖ ${STATE.date} ┬╖ ${new Date(STATE.fetchedAt).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})} WIB`;
+    st.innerHTML = `<i class="fa-solid fa-circle text-emerald-400 text-[8px]"></i> Data langsung BMKG · ${STATE.date} · ${new Date(STATE.fetchedAt).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})} WIB`;
   } else {
     st.innerHTML = `<i class="fa-solid fa-circle text-amber-400 text-[8px]"></i> Snapshot ${STATE.date} (jaringan live belum tersedia)`;
   }
   document.getElementById('footStamp').textContent =
-    `Data ${idDate(STATE.date)} ┬╖ ${fmt(total)} titik ┬╖ diperbarui: ${STATE.fetchedAt || '-'}`;
+    `Data ${idDate(STATE.date)} · ${fmt(total)} titik · diperbarui: ${STATE.fetchedAt || '-'}`;
 
   const t = STATE.trend;
   const tlabel = t.length
     ? (delta === null ? `data ${idDate(STATE.date)}` : `dibanding hari sebelumnya ${delta >= 0 ? 'naik' : 'turun'} ${Math.abs(delta)}%`)
     : '';
-  document.getElementById('mTotalSub').textContent = 'citra satelit ' + idDate(STATE.date) + (tlabel ? ' ┬╖ ' + tlabel : '');
+  document.getElementById('mTotalSub').textContent = 'citra satelit ' + idDate(STATE.date) + (tlabel ? ' · ' + tlabel : '');
 
   updateAlert(delta);
 }
@@ -743,12 +743,12 @@ function updateAlert(delta) {
   if (!total) { el.className = 'rounded-2xl border px-4 py-3.5 text-sm bg-slate-900 border-slate-800 text-slate-400'; el.innerHTML = 'Tidak ada data titik panas.'; return; }
   const top2 = c.slice(0,2).map(x => `${tc(x.name)} (${fmt(x.n)})`).join(' dan ');
   const g = dominantWind();
-  const windTxt = g ? `Angin dominan dari <b>${dirFrom(g.dir)}</b> (┬▒${g.spd} km/j) ΓÇö asap bergerak ke <b>${dirTo(g.dir)}</b>.` : '';
+  const windTxt = g ? `Angin dominan dari <b>${dirFrom(g.dir)}</b> (±${g.spd} km/j) — asap bergerak ke <b>${dirTo(g.dir)}</b>.` : '';
   const deltaTxt = delta === null ? '' : ` Jumlah titik ${delta >= 0 ? 'naik' : 'turun'} <b>${Math.abs(delta)}%</b> dari hari sebelumnya.`;
   const level = (total >= 4000 || hi >= 400)
-    ? { cls:'bg-red-950/70 border-red-800', ic:'fa-triangle-exclamation text-red-400', ttl:'BAHAYA TINGGI ΓÇö waspadai kebakaran & asap' }
-    : (total >= 1200 ? { cls:'bg-amber-950/70 border-amber-800', ic:'fa-circle-exclamation text-amber-400', ttl:'WASPADA ΓÇö titik panas terpantau cukup banyak' }
-                     : { cls:'bg-slate-900 border-slate-800', ic:'fa-circle-info text-cyan-400', ttl:'SIAGA ΓÇö pantau perkembangan' });
+    ? { cls:'bg-red-950/70 border-red-800', ic:'fa-triangle-exclamation text-red-400', ttl:'BAHAYA TINGGI — waspadai kebakaran & asap' }
+    : (total >= 1200 ? { cls:'bg-amber-950/70 border-amber-800', ic:'fa-circle-exclamation text-amber-400', ttl:'WASPADA — titik panas terpantau cukup banyak' }
+                     : { cls:'bg-slate-900 border-slate-800', ic:'fa-circle-info text-cyan-400', ttl:'SIAGA — pantau perkembangan' });
   el.className = `rounded-2xl border px-4 py-3.5 flex gap-3 items-start text-sm ${level.cls}`;
   el.innerHTML = `<i class="fa-solid ${level.ic} mt-0.5 text-lg"></i>
     <div class="leading-relaxed">
@@ -774,7 +774,7 @@ function renderCharts() {
   const pc = STATE.provCounts.slice(0,10);
   charts.prov = new Chart(document.getElementById('chProv'), {
     type:'bar',
-    data:{ labels:pc.map(x => { const n = tc(x.name); return n.length > 16 ? n.slice(0,15)+'ΓÇª' : n; }),
+    data:{ labels:pc.map(x => { const n = tc(x.name); return n.length > 16 ? n.slice(0,15)+'…' : n; }),
       datasets:[
         { label:'Berisiko tinggi', data:pc.map(x => x.hi), backgroundColor:'#ef4444', borderRadius:4 },
         { label:'Lainnya', data:pc.map(x => x.n - x.hi), backgroundColor:'#f59e0b', borderRadius:4 } ] },
@@ -822,7 +822,7 @@ function renderTable() {
     const r = RISK[p.conf] || RISK[7];
     return `<tr class="hover:bg-slate-800/60 transition cursor-pointer" data-i="${p.i}">
       <td class="p-3 font-mono text-slate-400">${esc(p.time)}<br><span class="text-[10px] text-slate-600">${idShort(p.date)}</span></td>
-      <td class="p-3"><span class="font-semibold text-white">${esc(tc(p.kab))}</span><br><span class="text-[11px] text-slate-400">${esc(tc(p.kec))} ┬╖ ${esc(tc(p.prov))}</span></td>
+      <td class="p-3"><span class="font-semibold text-white">${esc(tc(p.kab))}</span><br><span class="text-[11px] text-slate-400">${esc(tc(p.kec))} · ${esc(tc(p.prov))}</span></td>
       <td class="p-3"><span class="chip ${r.cls}">${p.conf}/10</span></td>
       <td class="p-3 text-slate-400">${esc(p.sat)}</td>
       <td class="p-3 ${p.conf>=9?'text-red-400 font-bold':p.conf>=8?'text-amber-400':'text-sky-300'}">${r.label}</td>
@@ -831,7 +831,7 @@ function renderTable() {
   }).join('') || `<tr><td colspan="6" class="p-6 text-center text-slate-500">Tidak ada titik yang cocok dengan pencarian.</td></tr>`;
 
   document.getElementById('pgInfo').textContent =
-    `Menampilkan ${slice.length ? ((page-1)*PAGE_SIZE+1) : 0}ΓÇô${Math.min(page*PAGE_SIZE, rows.length)} dari ${fmt(rows.length)} titik`;
+    `Menampilkan ${slice.length ? ((page-1)*PAGE_SIZE+1) : 0}–${Math.min(page*PAGE_SIZE, rows.length)} dari ${fmt(rows.length)} titik`;
   document.getElementById('pgPrev').disabled = page <= 1;
   document.getElementById('pgNext').disabled = page >= pages;
 }
@@ -910,8 +910,8 @@ function buildTrend(liveDate, liveCount) {
 }
 function setStateStatus(kind) {
   const el = document.getElementById('dataStatus');
-  if (kind === 'loading') el.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-amber-400"></i> Menghubungi server BMKGΓÇª`;
-  else if (kind === 'fail') el.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Live tidak tersedia ΓÇö memakai snapshot ${STATE.date}`;
+  if (kind === 'loading') el.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-amber-400"></i> Menghubungi server BMKG…`;
+  else if (kind === 'fail') el.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Live tidak tersedia — memakai snapshot ${STATE.date}`;
   else if (kind === 'ok') el.innerHTML = `<i class="fa-solid fa-circle text-emerald-400 text-[8px]"></i> Data langsung BMKG ${STATE.date}`;
   else if (kind === 'error') el.innerHTML = `<i class="fa-solid fa-circle-xmark text-red-400"></i> ${esc(arguments[1] || 'Kesalahan data')}`;
 }
@@ -939,12 +939,12 @@ function localAnalysis() {
 async function runAnalysis() {
   openAI();
   const body = document.getElementById('aiBody');
-  body.innerHTML = `<div class="flex items-center justify-center py-8 text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl mr-3 text-purple-400"></i> Menyusun analisisΓÇª</div>`;
+  body.innerHTML = `<div class="flex items-center justify-center py-8 text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl mr-3 text-purple-400"></i> Menyusun analisis…</div>`;
   const key = localStorage.getItem('sk_gemini_key') || '';
   const model = localStorage.getItem('sk_gemini_model') || 'gemini-2.5-flash';
 
   if (!key) {
-    document.getElementById('aiMode').textContent = 'Analisis lokal (aturan) ΓÇö tanpa API key';
+    document.getElementById('aiMode').textContent = 'Analisis lokal (aturan) — tanpa API key';
     body.innerHTML = localAnalysis(); lastAI = body.innerText; return;
   }
 
@@ -966,11 +966,11 @@ Isi analisis: (1) kondisi & wilayah paling bahaya, (2) ke mana asap kemungkinan 
     const j = await r.json();
     const text = j?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) throw new Error('respons kosong');
-    document.getElementById('aiMode').textContent = 'Diproses dengan Google Gemini ┬╖ ' + model;
+    document.getElementById('aiMode').textContent = 'Diproses dengan Google Gemini · ' + model;
     body.innerHTML = text.split(/\n{2,}/).map(p => `<p>${esc(p).replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</p>`).join('');
     lastAI = text;
   } catch (e) {
-    document.getElementById('aiMode').textContent = 'Gemini gagal (' + e.message + ') ΓÇö memakai analisis lokal';
+    document.getElementById('aiMode').textContent = 'Gemini gagal (' + e.message + ') — memakai analisis lokal';
     body.innerHTML = localAnalysis(); lastAI = body.innerText;
   }
 }
@@ -1010,7 +1010,7 @@ window.addEventListener('DOMContentLoaded', () => {
     loadProvinces(); loadWind();
     refreshLive();
   } else {
-    document.getElementById('mapLoading').innerHTML = '<div class="text-center text-red-400 text-sm p-6">data/snapshot.js tidak ditemukan ΓÇö jalankan tools/build_snapshot.pl</div>';
+    document.getElementById('mapLoading').innerHTML = '<div class="text-center text-red-400 text-sm p-6">data/snapshot.js tidak ditemukan — jalankan tools/build_snapshot.pl</div>';
   }
   setInterval(() => { if (!document.hidden) refreshLive(); }, 15 * 60 * 1000);
 });
