@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SI-KARHUTLA — Pemantauan Titik Panas Indonesia (BMKG &amp; Satelit)</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: { extend: { colors: { brand: {
+    accent:'#f97316', danger:'#ef4444', warning:'#eab308', info:'#06b6d4', success:'#10b981' } } } }
+}
+</script>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; background:#070a12; }
+  .map-container { height: 600px; }
+  .glass { background:rgba(19,27,46,.88); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,.08); }
+  .leaflet-popup-content-wrapper { background:#0f172a !important; color:#f8fafc !important;
+    border:1px solid #334155 !important; border-radius:.75rem !important; box-shadow:0 18px 30px rgba(0,0,0,.55) !important; }
+  .leaflet-popup-tip { background:#0f172a !important; }
+  .leaflet-popup-content { margin:12px 14px !important; font-size:12px; }
+  .cluster-dot { display:flex; align-items:center; justify-content:center; border-radius:50%;
+    color:#fff; font-weight:800; border:2px solid rgba(255,255,255,.75); box-shadow:0 4px 14px rgba(0,0,0,.5); }
+  .wind-arrow { color:#fbbf24; text-shadow:0 2px 6px #000; font-size:15px; transition:transform .3s; }
+  .pulse { border-radius:50%; }
+  .pulse.high { animation:pd 1.4s infinite; }
+  .pulse.mid  { animation:pw 2s infinite; }
+  @keyframes pd { 0%{box-shadow:0 0 0 0 rgba(239,68,68,.75)} 70%{box-shadow:0 0 0 12px rgba(239,68,68,0)} 100%{box-shadow:0 0 0 0 rgba(239,68,68,0)} }
+  @keyframes pw { 0%{box-shadow:0 0 0 0 rgba(245,158,11,.75)} 70%{box-shadow:0 0 0 10px rgba(245,158,11,0)} 100%{box-shadow:0 0 0 0 rgba(245,158,11,0)} }
+  .metric { background:rgba(15,23,42,.85); border:1px solid #1e293b; border-radius:1rem; }
+  .chip { font-size:10px; font-weight:800; padding:2px 8px; border-radius:999px; border:1px solid; }
+  .r-high { background:#7f1d1d; color:#fecaca; border-color:#b91c1c; }
+  .r-mid  { background:#78350f; color:#fde68a; border-color:#b45309; }
+  .r-low  { background:#0c4a6e; color:#bae6fd; border-color:#0369a1; }
+  table thead th { position:sticky; top:0; background:#020617; z-index:1; }
+  .scroll::-webkit-scrollbar { width:8px; height:8px; }
+  .scroll::-webkit-scrollbar-thumb { background:#334155; border-radius:8px; }
+  .scroll::-webkit-scrollbar-track { background:#0f172a; }
+  .legend-swatch { width:14px; height:14px; border-radius:50%; border:2px solid rgba(255,255,255,.7); flex:none; }
+</style>
+</head>
+
+<body class="text-slate-100 min-h-screen flex flex-col">
+
+<!-- ================= HEADER ================= -->
+<header class="border-b border-slate-800 bg-slate-900/95 sticky top-0 z-50 backdrop-blur-md">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+    <div class="flex items-center gap-3">
+      <div class="p-2.5 bg-red-600/20 text-red-500 rounded-xl border border-red-500/30">
+        <i class="fa-solid fa-satellite-dish text-2xl animate-pulse"></i>
+      </div>
+      <div>
+        <h1 class="text-lg md:text-xl font-bold text-white tracking-wide flex items-center gap-2 flex-wrap">
+          SI-KARHUTLA · PUSAT INFORMASI TITIK PANAS
+          <span class="text-[10px] font-semibold bg-red-950 text-red-400 border border-red-800/60 px-2 py-0.5 rounded-full uppercase">BMKG + Satelit</span>
+        </h1>
+        <p class="text-xs text-slate-400">Deteksi kebakaran hutan &amp; lahan, arah asap, cuaca dan kualitas udara — bahasa sederhana untuk semua orang</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 text-xs flex-wrap">
+      <span id="dataStatus" class="px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-300 font-medium flex items-center gap-2">
+        <i class="fa-solid fa-circle-notch fa-spin text-amber-400"></i> Memuat data…
+      </span>
+      <button onclick="refreshLive()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl font-semibold transition flex items-center gap-2">
+        <i class="fa-solid fa-rotate text-cyan-400"></i> Segarkan Data
+      </button>
+      <button onclick="openSettings()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl font-semibold transition flex items-center gap-2" title="Pengaturan AI">
+        <i class="fa-solid fa-gear text-slate-300"></i>
+      </button>
+      <button onclick="runAnalysis()" class="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-xl font-semibold shadow-lg shadow-purple-900/30 transition flex items-center gap-2">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Analisis Karhutla
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-5 w-full flex-1 flex flex-col gap-5">
+
+  <!-- ================= PERINGATAN ================= -->
+  <div id="alertBanner" class="rounded-2xl border px-4 py-3.5 flex gap-3 items-start text-sm"></div>
+
+  <!-- ================= KARTU RINGKASAN ================= -->
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+    <div class="metric p-4">
+      <div class="flex justify-between text-slate-400 text-xs"><span>Titik panas terdeteksi</span><i class="fa-solid fa-fire text-red-500"></i></div>
+      <div class="text-3xl font-black text-red-500 mt-1" id="mTotal">—</div>
+      <div class="text-[10px] text-slate-500 mt-1" id="mTotalSub">dari citra satelit</div>
+    </div>
+    <div class="metric p-4">
+      <div class="flex justify-between text-slate-400 text-xs"><span>Berisiko tinggi</span><i class="fa-solid fa-triangle-exclamation text-amber-500"></i></div>
+      <div class="text-3xl font-black text-amber-400 mt-1" id="mHigh">—</div>
+      <div class="text-[10px] text-slate-500 mt-1">kepastian 9/10 — hampir pasti api</div>
+    </div>
+    <div class="metric p-4">
+      <div class="flex justify-between text-slate-400 text-xs"><span>Wilayah paling banyak</span><i class="fa-solid fa-map-location-dot text-cyan-400"></i></div>
+      <div class="text-base font-bold text-cyan-300 mt-1 leading-tight" id="mProv">—</div>
+      <div class="text-[10px] text-slate-500 mt-1" id="mProvSub">provinsi terbanyak titik panas</div>
+    </div>
+    <div class="metric p-4">
+      <div class="flex justify-between text-slate-400 text-xs"><span>Status nasional</span><i class="fa-solid fa-shield-halved text-red-400"></i></div>
+      <div class="mt-1" id="mStatus">—</div>
+      <div class="text-[10px] text-slate-500 mt-1" id="mStatusSub">berdasarkan jumlah &amp; kepastian titik</div>
+    </div>
+    <div class="metric p-4 col-span-2 md:col-span-1">
+      <div class="flex justify-between text-slate-400 text-xs"><span>Cuaca &amp; udara (titik dipilih)</span><i class="fa-solid fa-smog text-orange-400"></i></div>
+      <div class="text-base font-bold text-white mt-1" id="mWeather">Klik titik di peta</div>
+      <div class="text-[10px] text-slate-500 mt-1" id="mWeatherSub">cuaca nyata dari Open-Meteo</div>
+    </div>
+  </div>
+
+  <!-- ================= PETA + PANEL ================= -->
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-5">
+
+    <div class="lg:col-span-3 flex flex-col gap-3">
+      <!-- kontrol peta -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 p-3 rounded-2xl border border-slate-800 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="text-slate-400 font-medium"><i class="fa-solid fa-layer-group text-amber-500"></i> Peta dasar:</span>
+          <select id="baseMap" onchange="changeBaseMap(this.value)" class="bg-slate-950 text-slate-200 border border-slate-700 px-2.5 py-1.5 rounded-lg font-medium focus:outline-none focus:border-amber-500">
+            <option value="dark" selected>Gelap (mudah dilihat)</option>
+            <option value="sat">Satelit (citra bumi)</option>
+            <option value="light">Terang (peta jalan)</option>
+          </select>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <label class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-lg cursor-pointer border border-slate-800 hover:border-slate-700">
+            <input type="checkbox" id="ckPts" checked onchange="toggleLayers()" class="rounded text-red-500 focus:ring-0"><span class="text-red-400"><i class="fa-solid fa-fire"></i> Titik panas</span></label>
+          <label class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-lg cursor-pointer border border-slate-800 hover:border-slate-700">
+            <input type="checkbox" id="ckProv" checked onchange="toggleLayers()" class="rounded text-cyan-500 focus:ring-0"><span class="text-cyan-400"><i class="fa-solid fa-border-all"></i> Batas provinsi</span></label>
+          <label class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-lg cursor-pointer border border-slate-800 hover:border-slate-700">
+            <input type="checkbox" id="ckHeat" onchange="toggleLayers()" class="rounded text-purple-500 focus:ring-0"><span class="text-purple-400"><i class="fa-solid fa-fire-flame-curved"></i> Kepadatan</span></label>
+          <label class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-lg cursor-pointer border border-slate-800 hover:border-slate-700">
+            <input type="checkbox" id="ckWind" checked onchange="toggleLayers()" class="rounded text-amber-500 focus:ring-0"><span class="text-amber-400"><i class="fa-solid fa-wind"></i> Arah angin</span></label>
+          <label class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-lg cursor-pointer border border-slate-800 hover:border-slate-700">
+            <input type="checkbox" id="ckPlume" checked onchange="toggleLayers()" class="rounded text-orange-500 focus:ring-0"><span class="text-orange-300"><i class="fa-solid fa-smog"></i> Jalur asap</span></label>
+          <button onclick="focusToHotspots()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1">
+            <i class="fa-solid fa-crosshairs"></i> Fokus ke titik api</button>
+        </div>
+      </div>
+
+      <!-- kanvas peta -->
+      <div class="relative w-full rounded-2xl overflow-hidden border border-slate-800 map-container shadow-2xl">
+        <div id="map" class="w-full h-full bg-slate-950"></div>
+
+        <div class="absolute top-3 left-11 z-[500] glass rounded-xl p-3 text-[11px] leading-relaxed max-w-[230px]">
+          <div class="font-bold text-slate-200 mb-1.5 uppercase tracking-wider text-[10px]">Cara membaca peta</div>
+          <div class="flex items-center gap-2 mb-1"><span class="legend-swatch" style="background:#ef4444"></span><span class="text-slate-300">Merah · hampir pasti api (9/10)</span></div>
+          <div class="flex items-center gap-2 mb-1"><span class="legend-swatch" style="background:#f59e0b"></span><span class="text-slate-300">Kuning · kemungkinan besar (8/10)</span></div>
+          <div class="flex items-center gap-2 mb-1"><span class="legend-swatch" style="background:#38bdf8"></span><span class="text-slate-300">Biru · perlu dicek petugas (7/10)</span></div>
+          <div class="flex items-center gap-2 mb-1"><span class="legend-swatch" style="background:#f97316;border-radius:3px;height:9px"></span><span class="text-slate-300">Jingga · perkiraan jalur asap</span></div>
+          <div class="text-slate-400 mt-1.5 border-t border-slate-700 pt-1.5">Bola bertuliskan angka = kumpulan titik. Klik untuk memperbesar.</div>
+        </div>
+
+        <div id="mapLoading" class="absolute inset-0 z-[600] bg-slate-950/70 flex items-center justify-center">
+          <div class="text-center text-slate-300">
+            <i class="fa-solid fa-spinner fa-spin text-2xl text-amber-400"></i>
+            <div class="text-xs mt-2">Mengambil data titik panas…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- panel detail -->
+    <div class="flex flex-col gap-4">
+      <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 flex-1">
+        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-location-crosshairs text-cyan-400"></i> Detail titik yang dipilih
+        </h3>
+
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+          <div class="flex justify-between items-start gap-2">
+            <div>
+              <h4 class="font-bold text-white text-sm leading-tight" id="dLoc">Klik salah satu titik di peta</h4>
+              <p class="text-[11px] text-cyan-400 font-mono mt-1" id="dCoord">—</p>
+            </div>
+            <span class="chip r-low" id="dRisk">—</span>
+          </div>
+
+          <div class="text-[11px] bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-slate-300 leading-relaxed" id="dMeaning">
+            Peta menampilkan titik panas hasil deteksi satelit. Pilih titik untuk melihat cuaca, kualitas udara, dan arah asap di lokasi tersebut.
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Suhu</span><strong class="text-amber-400 text-sm" id="dTemp">—</strong></div>
+            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Kelembaban</span><strong class="text-cyan-400 text-sm" id="dHum">—</strong></div>
+            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Angin</span><strong class="text-emerald-400 text-sm" id="dWind">—</strong></div>
+            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Jarak pandang</span><strong class="text-indigo-300 text-sm" id="dVis">—</strong></div>
+            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Udara (PM2.5)</span><strong class="text-orange-300 text-sm" id="dPm">—</strong></div>
+            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800"><span class="text-slate-400 block text-[10px]">Indeks kualitas udara</span><strong class="text-red-300 text-sm" id="dAqi">—</strong></div>
+          </div>
+
+          <div class="text-xs border-t border-slate-800 pt-2.5">
+            <div class="text-slate-400 font-semibold mb-1"><i class="fa-solid fa-smog text-orange-400"></i> Perkiraan arah asap</div>
+            <p class="text-orange-200 leading-relaxed" id="dSmoke">Pilih titik untuk melihat ke mana asap akan bergerak.</p>
+          </div>
+        </div>
+
+        <div class="mt-3 text-[10px] text-slate-500 text-center leading-relaxed">
+          Data titik panas: BMKG CEWS · Cuaca &amp; udara: Open-Meteo (langsung, tanpa perantara)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= GRAFIK ================= -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div class="bg-slate-900/90 p-4 rounded-2xl border border-slate-800">
+      <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-chart-line text-cyan-400"></i> Jumlah titik panas 7 hari</h3>
+      <p class="text-[10px] text-slate-500 mb-2">Naik-turunnya deteksi tiap hari (titik unik, sudah dibersihkan dari duplikat)</p>
+      <div class="h-44"><canvas id="chTrend"></canvas></div>
+    </div>
+    <div class="bg-slate-900/90 p-4 rounded-2xl border border-slate-800">
+      <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-chart-column text-amber-500"></i> Provinsi paling terdampak</h3>
+      <p class="text-[10px] text-slate-500 mb-2">10 provinsi dengan titik panas terbanyak pada tanggal data</p>
+      <div class="h-44"><canvas id="chProv"></canvas></div>
+    </div>
+    <div class="bg-slate-900/90 p-4 rounded-2xl border border-slate-800">
+      <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-chart-pie text-purple-400"></i> Tingkat kepastian deteksi</h3>
+      <p class="text-[10px] text-slate-500 mb-2">Seberapa yakin satelit bahwa titik itu benar-benar api</p>
+      <div class="h-44 flex items-center justify-center"><canvas id="chConf"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ================= TABEL ================= -->
+  <div class="bg-slate-900/90 rounded-2xl border border-slate-800 overflow-hidden">
+    <div class="p-4 border-b border-slate-800 flex flex-wrap justify-between items-center gap-3">
+      <div>
+        <h2 class="font-bold text-white text-base flex items-center gap-2"><i class="fa-solid fa-list text-red-500"></i> Daftar titik panas</h2>
+        <p class="text-xs text-slate-400">Cari nama kabupaten atau provinsi untuk melihat titik di daerah Anda</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <input id="q" oninput="setPage(1)" placeholder="Cari provinsi / kabupaten…" class="bg-slate-950 border border-slate-700 text-slate-200 px-3 py-1.5 rounded-lg focus:outline-none focus:border-amber-500 w-44">
+        <select id="fProv" onchange="setPage(1)" class="bg-slate-950 border border-slate-700 text-slate-200 px-2.5 py-1.5 rounded-lg focus:outline-none focus:border-amber-500"><option value="">Semua provinsi</option></select>
+        <select id="fRisk" onchange="setPage(1)" class="bg-slate-950 border border-slate-700 text-slate-200 px-2.5 py-1.5 rounded-lg focus:outline-none focus:border-amber-500">
+          <option value="">Semua tingkat</option><option value="9">Risiko tinggi</option><option value="8">Risiko sedang</option><option value="7">Perlu dicek</option>
+        </select>
+        <button onclick="exportCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-file-csv text-emerald-400"></i> Unduh CSV</button>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto scroll max-h-[430px] overflow-y-auto">
+      <table class="w-full text-left text-xs text-slate-300">
+        <thead class="text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+          <tr>
+            <th class="p-3">Waktu</th><th class="p-3">Lokasi</th><th class="p-3">Kepastian</th>
+            <th class="p-3">Satelit</th><th class="p-3">Status</th><th class="p-3 text-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tbody" class="divide-y divide-slate-800/60"></tbody>
+      </table>
+    </div>
+
+    <div class="p-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+      <span id="pgInfo">—</span>
+      <div class="flex gap-2">
+        <button onclick="setPage(page-1)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg disabled:opacity-40" id="pgPrev">‹ Sebelumnya</button>
+        <button onclick="setPage(page+1)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg disabled:opacity-40" id="pgNext">Berikutnya ›</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= PANDUAN AWAM ================= -->
+  <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-5">
+    <h2 class="font-bold text-white text-base flex items-center gap-2 mb-3"><i class="fa-solid fa-circle-question text-amber-400"></i> Panduan singkat untuk masyarakat</h2>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs text-slate-300 leading-relaxed">
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5">
+        <div class="font-bold text-red-400 mb-1">Apa itu titik panas?</div>
+        Titik kecil di peta yang dilihat satelit karena bersuhu jauh lebih panas dari sekitarnya. Bisa berarti kebakaran hutan/lahan, kebakaran lahan kecil, atau api industri.
+      </div>
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5">
+        <div class="font-bold text-amber-400 mb-1">Angka 7, 8, 9?</div>
+        Tingkat kepastian satelit (maksimal 10). Angka 9 = hampir pasti nyata. Angka 8 = kemungkinan besar nyata. Angka 7 = masih perlu dicek petugas di lapangan.
+      </div>
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5">
+        <div class="font-bold text-orange-400 mb-1">Kenapa ada poligon jingga?</div>
+        Itu perkiraan jalur asap, dihitung dari arah dan kecepatan angin di sekitar titik. Wilayah yang arahnya sejajar angin lebih mungkin terkena asap.
+      </div>
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5">
+        <div class="font-bold text-cyan-400 mb-1">Apa yang harus dilakukan?</div>
+        Jika titik merah ada dekat rumah Anda: hindari aktivitas luar ruangan, siapkan masker N95, pantau kabar resmi BMKG/Pemda, dan laporkan api bila terlihat (112 / 113).
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="border-t border-slate-800 bg-slate-950 py-5 mt-4">
+  <div class="max-w-7xl mx-auto px-4 text-[11px] text-slate-500 flex flex-wrap gap-x-6 gap-y-2 justify-between">
+    <div>Sumber data: <span class="text-slate-400">BMKG CEWS</span> (deteksi titik panas satelit VIIRS/MODIS — NOAA-20, SNPP, Terra, Aqua) · <span class="text-slate-400">Open-Meteo</span> (cuaca, jarak pandang, kualitas udara) · <span class="text-slate-400">OpenStreetMap / CARTO / Esri</span> (peta dasar)</div>
+    <div id="footStamp">—</div>
+  </div>
+</footer>
+
+<!-- ================= MODAL AI ================= -->
+<div id="aiModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[900] hidden items-center justify-center p-4">
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl flex flex-col gap-4">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+      <h3 class="text-base font-bold text-white flex items-center gap-2"><i class="fa-solid fa-robot text-purple-400"></i> Analisis Karhutla &amp; Asap</h3>
+      <button onclick="closeAI()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div id="aiBody" class="text-sm text-slate-200 space-y-3 leading-relaxed max-h-[60vh] overflow-y-auto scroll pr-2"></div>
+    <div class="flex justify-between items-center pt-3 border-t border-slate-800 text-[10px] text-slate-500">
+      <span id="aiMode">—</span>
+      <div class="flex gap-2">
+        <button onclick="speakAI()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold flex items-center gap-2"><i class="fa-solid fa-volume-high text-amber-400"></i> Putar suara</button>
+        <button onclick="closeAI()" class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-semibold">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL PENGATURAN ================= -->
+<div id="setModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[900] hidden items-center justify-center p-4">
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+      <h3 class="text-base font-bold text-white flex items-center gap-2"><i class="fa-solid fa-gear text-slate-300"></i> Pengaturan</h3>
+      <button onclick="closeSettings()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="text-xs text-slate-300 space-y-3">
+      <p class="text-slate-400 leading-relaxed">Analisis memakai Google Gemini bila Anda mengisi API key (gratis dari <span class="text-cyan-400">aistudio.google.com</span>). Tanpa key, analisis tetap berjalan memakai aturan lokal sehingga tombol selalu bisa dipakai. Key disimpan hanya di browser Anda.</p>
+      <label class="block"><span class="text-slate-400">Gemini API Key</span>
+        <input id="setKey" type="password" placeholder="AIza..." class="mt-1 w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg focus:outline-none focus:border-amber-500"></label>
+      <label class="block"><span class="text-slate-400">Model Gemini</span>
+        <input id="setModel" list="modelList" class="mt-1 w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg focus:outline-none focus:border-amber-500" value="gemini-2.5-flash">
+        <datalist id="modelList"><option value="gemini-2.5-flash"><option value="gemini-2.0-flash"><option value="gemini-3-flash-preview"></datalist></label>
+    </div>
+    <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+      <button onclick="clearKey()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold">Hapus key</button>
+      <button onclick="saveSettings()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-semibold">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- data snapshot (nyata, hasil pengunduhan dari BMKG CEWS) -->
+<script src="data/snapshot.js"></script>
+
+<script>
+/* ============================================================
+   SI-KARHUTLA — peta titik panas Indonesia
+   Sumber data : BMKG CEWS (snapshot + refresh live via proxy)
+   Cuaca/udara : Open-Meteo (CORS terbuka, tanpa API key)
+   ============================================================ */
+
+const SRC = 'https://cews.bmkg.go.id/tempatirk/HOTSPOT/';
+const PROVINCE_GEO = 'https://raw.githubusercontent.com/denyherianto/indonesia-geojson-topojson-maps-with-38-provinces/main/GeoJSON/indonesia-38-provinces.geojson';
+const PROXY_LIST = [
+  { make: u => 'https://r.jina.ai/' + u, fileOk: true },
+  { make: u => 'https://api.cors.lol/?url=' + encodeURIComponent(u), fileOk: true },
+  { make: u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u), fileOk: false },
+  { make: u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u), fileOk: false }
+];
+// Saat dibuka langsung (file://) hanya proxy yang mengizinkan origin "null"
+const PROXIES = PROXY_LIST.filter(p => location.protocol !== 'file:' || p.fileOk).map(p => p.make);
+
+const RISK = {
+  9: { label:'Risiko tinggi',  cls:'r-high', color:'#ef4444', plain:'hampir pasti nyata' },
+  8: { label:'Risiko sedang',  cls:'r-mid',  color:'#f59e0b', plain:'kemungkinan besar nyata' },
+  7: { label:'Perlu dicek',    cls:'r-low',  color:'#38bdf8', plain:'perlu diperiksa petugas' }
+};
+
+const PAGE_SIZE = 25;
+let page = 1;
+let STATE = { pts:[], date:'', trend:[], provs:[], provCounts:[], live:false, fetchedAt:null };
+let map, clusterLayer, heatLayer, provLayer, windLayer, plumeLayer, markerByIdx = new Map();
+let geoLoaded = false, selected = null, charts = {}, windGrid = null;
+const weatherCache = new Map();
+
+const fmt = n => (n ?? 0).toLocaleString('id-ID');
+function tc(s) {
+  s = String(s || '');
+  if (!s || s !== s.toUpperCase()) return s;
+  return s.toLowerCase().replace(/(^|[\s/(\-'])([a-z])/g, (m, p, c) => p + c.toUpperCase());
+}
+const pad = n => String(n).padStart(2,'0');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const idDate = iso => { const d = new Date(iso + 'T00:00:00'); return d.getDate() + ' ' + ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][d.getMonth()] + ' ' + d.getFullYear(); };
+const idShort = iso => { const d = new Date(iso + 'T00:00:00'); return pad(d.getDate()) + '/' + pad(d.getMonth()+1); };
+
+const DIRS = ['Utara','Timur Laut','Timur','Tenggara','Selatan','Barat Daya','Barat','Barat Laut'];
+const dirFrom = deg => DIRS[Math.round(((deg%360)+360)%360 / 45) % 8];
+const dirTo   = deg => dirFrom(deg + 180);
+
+function parsePoints(text) {
+  // file BMKG: tab-separated; bila lewat proxy bisa ada awalan metadata
+  const start = text.indexOf('BUJUR');
+  if (start < 0) return [];
+  const rows = text.slice(start).split(/\r?\n/);
+  const seen = new Set(), out = [];
+  for (let i = 1; i < rows.length; i++) {
+    const c = rows[i].split('\t');
+    if (c.length < 10) continue;
+    const lon = parseFloat(c[0]), lat = parseFloat(c[1]);
+    if (!isFinite(lon) || !isFinite(lat)) continue;
+    const conf = parseInt(c[2], 10) || 0;
+    const key = lon.toFixed(2) + ',' + lat.toFixed(2);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ lon, lat, conf, region:c[3], prov:c[4], kab:c[5], kec:c[6], sat:c[7], date:c[8], time:c[9] });
+  }
+  return out;
+}
+
+function statFromPoints(pts) {
+  const map = new Map();
+  for (const p of pts) {
+    let s = map.get(p.prov);
+    if (!s) { s = { name:p.prov, n:0, hi:0, mid:0, low:0 }; map.set(p.prov, s); }
+    s.n++;
+    if (p.conf >= 9) s.hi++; else if (p.conf >= 8) s.mid++; else s.low++;
+  }
+  return [...map.values()].sort((a,b) => b.n - a.n);
+}
+
+function fromSnapshot() {
+  const s = window.SNAPSHOT;
+  if (!s) { setStateStatus('error', 'data/snapshot.js tidak ditemukan'); return false; }
+  STATE.pts = s.pts.map((a, i) => ({
+    i, lon:a[0], lat:a[1], conf:a[2],
+    prov:s.prov[a[3]] || '', kab:s.kab[a[4]] || '', kec:s.kec[a[5]] || '',
+    sat:s.sat[a[6]] || '', time:a[7], date:s.date
+  }));
+  window.__PT = STATE.pts;
+  STATE.date = s.date; STATE.trend = s.trend; STATE.provCounts = s.prov_counts;
+  STATE.live = false; STATE.fetchedAt = s.generated;
+  return true;
+}
+
+/* ---------------- PETA ---------------- */
+function initMap() {
+  map = L.map('map', { zoomControl:true, preferCanvas:true }).setView([-1.5, 117.5], 5);
+  changeBaseMap('dark');
+  clusterLayer = L.markerClusterGroup({
+    chunkedLoading:true, maxClusterRadius:45, showCoverageOnHover:false,
+    spiderfyOnMaxZoom:true,
+    iconCreateFunction: cl => {
+      const ch = cl.getAllChildMarkers();
+      let maxC = 0; for (const m of ch) maxC = Math.max(maxC, m.options.riskNum || 0);
+      const r = RISK[maxC] || RISK[7];
+      const n = cl.getChildCount();
+      const size = n > 500 ? 54 : n > 100 ? 48 : n > 20 ? 42 : 36;
+      return L.divIcon({
+        html:`<div class="cluster-dot" style="width:${size}px;height:${size}px;background:${r.color}">${n>999?(n/1000).toFixed(1)+'k':n}</div>`,
+        className:'', iconSize:[size,size]
+      });
+    }
+  });
+  provLayer = L.layerGroup(); windLayer = L.layerGroup(); plumeLayer = L.layerGroup();
+  map.addLayer(clusterLayer); map.addLayer(provLayer); map.addLayer(windLayer); map.addLayer(plumeLayer);
+  toggleLayers();
+}
+
+const BASE = {
+  dark:  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution:'&copy; OpenStreetMap &copy; CARTO', maxZoom:18 }),
+  light: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution:'&copy; OpenStreetMap &copy; CARTO', maxZoom:18 }),
+  sat:   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:'Tiles &copy; Esri', maxZoom:18 }),
+  satL:  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', { maxZoom:18, pane:'shadowPane' })
+};
+let curBase = null, curBase2 = null;
+function changeBaseMap(t) {
+  if (curBase) map.removeLayer(curBase);
+  if (curBase2) map.removeLayer(curBase2);
+  curBase2 = null;
+  if (t === 'sat') { curBase = BASE.sat; curBase2 = BASE.satL; curBase2.addTo(map); }
+  else curBase = BASE[t] || BASE.dark;
+  curBase.addTo(map);
+}
+
+function renderMarkers() {
+  clusterLayer.clearLayers();
+  markerByIdx.clear();
+  STATE.pts.forEach(p => {
+    const r = RISK[p.conf] || RISK[7];
+    const mk = L.circleMarker([p.lat, p.lon], {
+      radius: 6, color:'#0f172a', weight:1.5, fillColor:r.color, fillOpacity:.9, riskNum:p.conf
+    });
+    mk.bindPopup(() => popupHTML(p, p.i));
+    mk.on('click', () => selectPoint(p));
+    markerByIdx.set(p.i, mk);
+    clusterLayer.addLayer(mk);
+  });
+}
+
+function popupHTML(p, i) {
+  const r = RISK[p.conf] || RISK[7];
+  return `<div class="p-0.5 min-w-[210px]">
+    <div class="font-bold text-[13px] text-white mb-1">${esc(tc(p.kab))}, ${esc(tc(p.prov))}</div>
+    <div class="text-slate-400 mb-2">${esc(tc(p.kec))} · ${esc(p.time)} WIB · ${esc(p.sat)}</div>
+    <span class="chip ${r.cls}">${r.label} (${p.conf}/10)</span>
+    <div class="mt-2 text-slate-300">Koordinat: <span class="font-mono text-cyan-300">${p.lat.toFixed(4)}, ${p.lon.toFixed(4)}</span></div>
+    <button onclick="selectPoint(window.__PT[${i}])" class="mt-2 w-full bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold py-1.5 rounded-lg">Lihat detail &amp; arah asap</button>
+  </div>`;
+}
+
+function renderHeat() {
+  const wasOn = heatLayer && map.hasLayer(heatLayer);
+  if (heatLayer) map.removeLayer(heatLayer);
+  const data = STATE.pts.map(p => [p.lat, p.lon, Math.max(.25, p.conf / 9)]);
+  heatLayer = L.heatLayer(data, { radius:26, blur:18, maxZoom:9, gradient:{ 0.35:'#38bdf8', 0.6:'#f59e0b', 1:'#ef4444' } });
+  if (wasOn) map.addLayer(heatLayer);
+}
+
+function toggleLayers() {
+  const on = id => document.getElementById(id).checked;
+  if (!map) return;
+  if (on('ckPts')) map.addLayer(clusterLayer); else map.removeLayer(clusterLayer);
+  if (on('ckProv') && geoLoaded) map.addLayer(provLayer); else map.removeLayer(provLayer);
+  if (on('ckHeat')) { if (!heatLayer) renderHeat(); map.addLayer(heatLayer); } else if (heatLayer) map.removeLayer(heatLayer);
+  if (on('ckWind')) map.addLayer(windLayer); else map.removeLayer(windLayer);
+  if (on('ckPlume')) map.addLayer(plumeLayer); else map.removeLayer(plumeLayer);
+}
+
+function dataBounds() {
+  if (!STATE.pts.length) return L.latLngBounds([6,95],[-11,141]);
+  let a = 90, b = 180, c = -90, d = -180;
+  for (const p of STATE.pts) { a = Math.min(a,p.lat); c = Math.max(c,p.lat); b = Math.min(b,p.lon); d = Math.max(d,p.lon); }
+  return L.latLngBounds([a,b],[c,d]).pad(0.12);
+}
+function fitToData()   { map.fitBounds(dataBounds(), { padding:[24,24] }); }
+function focusToHotspots() { map.fitBounds(dataBounds(), { padding:[24,24] }); }
+
+/* ---------------- BATAS PROVINSI ---------------- */
+async function loadProvinces() {
+  try {
+    const res = await fetch(PROVINCE_GEO); if (!res.ok) throw 0;
+    const gj = await res.json();
+    const layer = L.geoJSON(gj, {
+      style: { color:'#67e8f9', weight:1, opacity:.45, fillColor:'#0ea5e9', fillOpacity:.04, dashArray:'4 3' },
+      onEachFeature: (f, l) => {
+        const name = (f.properties && (f.properties.PROVINSI || f.properties.provinsi)) || '';
+        l.bindTooltip(name, { sticky:true, direction:'top', className:'bg-slate-900 text-slate-100 border-0' });
+        l.on('click', () => { document.getElementById('fProv').value = name.toUpperCase(); setPage(1); document.querySelector('table').scrollIntoView({ behavior:'smooth', block:'center' }); });
+      }
+    });
+    provLayer.clearLayers(); provLayer.addLayer(layer); geoLoaded = true;
+    if (document.getElementById('ckProv').checked) map.addLayer(provLayer);
+  } catch (e) { console.warn('Batas provinsi tidak termuat', e); }
+}
+
+/* ---------------- ANGIN (Open-Meteo) ---------------- */
+function windGridCoords() {
+  const lats = [6,3,0,-3,-6,-9,-12], lons = [];
+  for (let x = 96; x <= 141; x += 3) lons.push(x);
+  const la = [], lo = [];
+  for (const y of lats) for (const x of lons) { la.push(y); lo.push(x); }
+  return { la, lo };
+}
+async function loadWind() {
+  try {
+    const { la, lo } = windGridCoords();
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${la.join(',')}&longitude=${lo.join(',')}` +
+                `&current=wind_speed_10m,wind_direction_10m&timezone=Asia%2FJakarta`;
+    const res = await fetch(url); if (!res.ok) throw 0;
+    const j = await res.json();
+    windGrid = (Array.isArray(j) ? j : [j]).map(r => ({
+      lat:+r.latitude, lon:+r.longitude,
+      spd:+r.current.wind_speed_10m, dir:+r.current.wind_direction_10m
+    }));
+    renderWind(); updateAlert();
+    if (selected) drawPlume(selected);
+  } catch (e) { console.warn('Angin tidak termuat', e); }
+}
+function windAt(lat, lon) {
+  if (!windGrid || !windGrid.length) return null;
+  let numS = 0, numD = 0, den = 0, best = null, bd = 1e9;
+  for (const g of windGrid) {
+    const dx = g.lon - lon, dy = g.lat - lat, d2 = dx*dx + dy*dy + 1e-6;
+    const w = 1 / d2;
+    numS += w * g.spd * Math.sin(g.dir * Math.PI/180);
+    numD += w * g.spd * Math.cos(g.dir * Math.PI/180);
+    den += w;
+    if (d2 < bd) { bd = d2; best = g; }
+  }
+  let mag = Math.hypot(numS, numD) / den;
+  let dir = (Math.atan2(numS, numD) * 180 / Math.PI + 360) % 360;
+  if (!isFinite(mag)) { mag = best.spd; dir = best.dir; }
+  return { spd:+mag.toFixed(1), dir:Math.round(dir) };
+}
+function renderWind() {
+  windLayer.clearLayers();
+  if (!windGrid) return;
+  for (const g of windGrid) {
+    const blowTo = (g.dir + 180) % 360;
+    const icon = L.divIcon({ className:'', html:`<i class="fa-solid fa-arrow-up wind-arrow" style="transform:rotate(${blowTo}deg)"></i>`, iconSize:[18,18], iconAnchor:[9,9] });
+    L.marker([g.lat, g.lon], { icon, interactive:true })
+      .bindTooltip(`${Math.round(g.spd)} km/j — angin dari ${dirFrom(g.dir)} (berhembus ke ${dirTo(g.dir)})`, { direction:'top' })
+      .addTo(windLayer);
+  }
+}
+
+/* ---------------- DETAIL TITIK + CUACA ---------------- */
+function selectPoint(p) {
+  if (!p) return;
+  selected = p;
+  const r = RISK[p.conf] || RISK[7];
+  document.getElementById('dLoc').textContent = `${tc(p.kec)}, ${tc(p.kab)}`;
+  document.getElementById('dLoc').title = tc(p.prov);
+  document.getElementById('dCoord').textContent = `${p.lat.toFixed(4)}, ${p.lon.toFixed(4)} · ${tc(p.prov)}`;
+  const chip = document.getElementById('dRisk');
+  chip.className = 'chip ' + r.cls; chip.textContent = `${r.label} · ${p.conf}/10`;
+  document.getElementById('dMeaning').innerHTML =
+    `Deteksi <b class="text-white">${esc(p.sat)}</b> pukul <b class="text-white">${esc(p.time)} WIB</b>. ` +
+    `Tingkat kepastian <b class="text-white">${p.conf}/10</b> — ${r.plain}.`;
+  document.getElementById('dTemp').textContent = '…';
+  document.getElementById('dHum').textContent = '…';
+  document.getElementById('dWind').textContent = '…';
+  document.getElementById('dVis').textContent = '…';
+  document.getElementById('dPm').textContent = '…';
+  document.getElementById('dAqi').textContent = '…';
+  document.getElementById('dSmoke').textContent = 'Mengambil data cuaca…';
+  map.panTo([p.lat, p.lon]);
+  if (map.getZoom() < 7) map.setView([p.lat, p.lon], 7, { animate:true });
+  drawPlume(p);
+  loadWeather(p);
+}
+
+function drawPlume(p, windOverride) {
+  plumeLayer.clearLayers();
+  const w = windOverride || windAt(p.lat, p.lon);
+  if (!w) {
+    document.getElementById('dSmoke').textContent =
+      'Data angin belum tersedia — perkiraan jalur asap akan muncul otomatis setelah data angin dimuat.';
+    return;
+  }
+  const src = windOverride ? 'di titik ini' : 'di sekitar titik ini';
+  const blowTo = (w.dir + 180) % 360;              // arah angin METEO = arah datang
+  const rad = blowTo * Math.PI / 180;
+  const km = Math.min(120, 6 + w.spd * 1.6 + p.conf * 1.2);
+  const cosLat = Math.cos(p.lat * Math.PI / 180) || 1;
+  const off = (deg, dist) => [ p.lat + Math.cos(deg) * dist / 111, p.lon + Math.sin(deg) * dist / (111 * cosLat) ];
+  const spread = 0.36;
+  const apex = off(rad, km);
+  const left = off(rad - spread, km * .72);
+  const right = off(rad + spread, km * .72);
+  const poly = L.polygon([[p.lat,p.lon], left, apex, right],
+    { color:'#fb923c', weight:1.5, fillColor:'#f97316', fillOpacity:.22 }).addTo(plumeLayer);
+  poly.bindTooltip(`Perkiraan asap: ke ${dirFrom(blowTo)} ± ${Math.round(km)} km (${Math.round(w.spd)} km/j)`);
+  const arrow = L.divIcon({ className:'', html:`<i class="fa-solid fa-arrow-up wind-arrow" style="transform:rotate(${blowTo}deg);font-size:20px"></i>`, iconSize:[22,22], iconAnchor:[11,11] });
+  L.marker([p.lat, p.lon], { icon:arrow, interactive:false }).addTo(plumeLayer);
+  if (document.getElementById('ckPlume').checked) map.addLayer(plumeLayer);
+  document.getElementById('dSmoke').innerHTML =
+    `Angin bertiup <b>dari ${dirFrom(w.dir)}</b> ${src} secepat <b>${Math.round(w.spd)} km/jam</b>, sehingga asap diperkirakan bergerak <b>ke arah ${dirFrom(blowTo)}</b> sejauh sekitar <b>${Math.round(km)} km</b>. Wilayah yang ada di arah tersebut patut mengantisipasi kabut asap.`;
+}
+
+async function loadWeather(p) {
+  const key = p.lat.toFixed(2) + ',' + p.lon.toFixed(2);
+  let data = weatherCache.get(key);
+  if (!data) {
+    try {
+      const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.lat}&longitude=${p.lon}` +
+        `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,visibility,precipitation&timezone=Asia%2FJakarta`).then(r => r.json());
+      let aqi = null;
+      try { aqi = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${p.lat}&longitude=${p.lon}&current=pm2_5,us_aqi&timezone=Asia%2FJakarta`).then(r => r.json()); } catch(e){}
+      data = { w, aqi }; weatherCache.set(key, data);
+    } catch (e) { data = null; }
+  }
+  if (!data || selected !== p) return;
+  const c = data.w.current;
+  document.getElementById('dTemp').textContent = c.temperature_2m + ' °C';
+  document.getElementById('dHum').textContent = c.relative_humidity_2m + '%';
+  document.getElementById('dWind').textContent = Math.round(c.wind_speed_10m) + ' km/j ' + dirFrom(c.wind_direction_10m);
+  document.getElementById('dVis').textContent = (c.visibility/1000).toFixed(1) + ' km';
+  const a = data.aqi && data.aqi.current;
+  document.getElementById('dPm').textContent = a ? a.pm2_5.toFixed(1) + ' µg/m³' : '—';
+  document.getElementById('dAqi').textContent = a ? aqiLabel(a.us_aqi) : '—';
+  document.getElementById('mWeather').textContent = `${c.temperature_2m}°C · ${a ? 'AQI ' + Math.round(a.us_aqi) : '—'}`;
+  document.getElementById('mWeatherSub').textContent =
+    `${tc(p.kab)} · ${c.relative_humidity_2m}% lembab · angin ${Math.round(c.wind_speed_10m)} km/j ${dirFrom(c.wind_direction_10m)}`;
+  drawPlume(p, { spd: +(+c.wind_speed_10m).toFixed(1), dir: Math.round(c.wind_direction_10m) });
+}
+function aqiLabel(v) {
+  if (v == null) return '—';
+  if (v <= 50) return Math.round(v) + ' (Baik)';
+  if (v <= 100) return Math.round(v) + ' (Sedang)';
+  if (v <= 150) return Math.round(v) + ' (Tidak sehat untuk kelompok sensitif)';
+  if (v <= 200) return Math.round(v) + ' (Tidak sehat)';
+  if (v <= 300) return Math.round(v) + ' (Sangat tidak sehat)';
+  return Math.round(v) + ' (Berbahaya)';
+}
+
+/* ---------------- RINGKASAN & PERINGATAN ---------------- */
+function renderMetrics() {
+  const total = STATE.pts.length;
+  const hi = STATE.pts.filter(p => p.conf >= 9).length;
+  const prev = STATE.trend.length >= 2 ? STATE.trend[STATE.trend.length - 2].n : null;
+  document.getElementById('mTotal').textContent = fmt(total);
+  document.getElementById('mHigh').textContent = fmt(hi);
+
+  const top = STATE.provCounts[0];
+  document.getElementById('mProv').textContent = top ? tc(top.name) : '—';
+  document.getElementById('mProvSub').textContent = top ? fmt(top.n) + ' titik · ' + fmt(top.hi) + ' berisiko tinggi' : '';
+
+  let status = { t:'AMAN', c:'bg-emerald-950 text-emerald-300 border-emerald-800', sub:'jumlah titik panas rendah' };
+  if (total >= 4000 || hi >= 400) status = { t:'BAHAYA TINGGI', c:'bg-red-950 text-red-300 border-red-800', sub:'banyak titik panas & kepastian tinggi' };
+  else if (total >= 1200 || hi >= 100) status = { t:'WASPADA', c:'bg-amber-950 text-amber-300 border-amber-800', sub:'titik panas cukup banyak' };
+  else if (total >= 250) status = { t:'SIAGA', c:'bg-orange-950 text-orange-300 border-orange-800', sub:'titik panas mulai terpantau' };
+  document.getElementById('mStatus').innerHTML = `<span class="chip ${status.c} text-[11px]">${status.t}</span>`;
+  document.getElementById('mStatusSub').textContent = status.sub;
+
+  const delta = prev ? Math.round(((total - prev) / prev) * 100) : null;
+  const st = document.getElementById('dataStatus');
+  if (STATE.live) {
+    st.innerHTML = `<i class="fa-solid fa-circle text-emerald-400 text-[8px]"></i> Data langsung BMKG · ${STATE.date} · ${new Date(STATE.fetchedAt).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})} WIB`;
+  } else {
+    st.innerHTML = `<i class="fa-solid fa-circle text-amber-400 text-[8px]"></i> Snapshot ${STATE.date} (jaringan live belum tersedia)`;
+  }
+  document.getElementById('footStamp').textContent =
+    `Data ${idDate(STATE.date)} · ${fmt(total)} titik · diperbarui: ${STATE.fetchedAt || '-'}`;
+
+  const t = STATE.trend;
+  const tlabel = t.length
+    ? (delta === null ? `data ${idDate(STATE.date)}` : `dibanding hari sebelumnya ${delta >= 0 ? 'naik' : 'turun'} ${Math.abs(delta)}%`)
+    : '';
+  document.getElementById('mTotalSub').textContent = 'citra satelit ' + idDate(STATE.date) + (tlabel ? ' · ' + tlabel : '');
+
+  updateAlert(delta);
+}
+
+function dominantWind() {
+  if (!windGrid || !windGrid.length) return null;
+  let sx = 0, sy = 0, sp = 0;
+  for (const g of windGrid) { sx += g.spd * Math.sin(g.dir*Math.PI/180); sy += g.spd * Math.cos(g.dir*Math.PI/180); sp += g.spd; }
+  const dir = (Math.atan2(sx, sy) * 180/Math.PI + 360) % 360;
+  return { dir:Math.round(dir), spd: Math.round(sp / windGrid.length) };
+}
+
+function updateAlert(delta) {
+  const el = document.getElementById('alertBanner');
+  const total = STATE.pts.length, hi = STATE.pts.filter(p => p.conf >= 9).length;
+  const c = STATE.provCounts;
+  if (!total) { el.className = 'rounded-2xl border px-4 py-3.5 text-sm bg-slate-900 border-slate-800 text-slate-400'; el.innerHTML = 'Tidak ada data titik panas.'; return; }
+  const top2 = c.slice(0,2).map(x => `${tc(x.name)} (${fmt(x.n)})`).join(' dan ');
+  const g = dominantWind();
+  const windTxt = g ? `Angin dominan dari <b>${dirFrom(g.dir)}</b> (±${g.spd} km/j) — asap bergerak ke <b>${dirTo(g.dir)}</b>.` : '';
+  const deltaTxt = delta === null ? '' : ` Jumlah titik ${delta >= 0 ? 'naik' : 'turun'} <b>${Math.abs(delta)}%</b> dari hari sebelumnya.`;
+  const level = (total >= 4000 || hi >= 400)
+    ? { cls:'bg-red-950/70 border-red-800', ic:'fa-triangle-exclamation text-red-400', ttl:'BAHAYA TINGGI — waspadai kebakaran & asap' }
+    : (total >= 1200 ? { cls:'bg-amber-950/70 border-amber-800', ic:'fa-circle-exclamation text-amber-400', ttl:'WASPADA — titik panas terpantau cukup banyak' }
+                     : { cls:'bg-slate-900 border-slate-800', ic:'fa-circle-info text-cyan-400', ttl:'SIAGA — pantau perkembangan' });
+  el.className = `rounded-2xl border px-4 py-3.5 flex gap-3 items-start text-sm ${level.cls}`;
+  el.innerHTML = `<i class="fa-solid ${level.ic} mt-0.5 text-lg"></i>
+    <div class="leading-relaxed">
+      <div class="font-bold text-white">${level.ttl}</div>
+      <div class="text-slate-300 mt-0.5">Terdeteksi <b class="text-white">${fmt(total)}</b> titik panas pada <b class="text-white">${idDate(STATE.date)}</b> (${fmt(hi)} berisiko tinggi). Wilayah paling terdampak: <b class="text-white">${esc(top2)}</b>.${deltaTxt} ${windTxt}</div>
+      <div class="text-slate-400 text-xs mt-1">Jika titik merah ada di dekat Anda: kurangi aktivitas luar ruangan, siapkan masker, dan pantau informasi resmi BMKG/Pemerintah Daerah.</div>
+    </div>`;
+}
+
+/* ---------------- GRAFIK ---------------- */
+function renderCharts() {
+  const grid = { color:'#1e293b' }, tick = { color:'#94a3b8', font:{ size:10 } };
+  Object.values(charts).forEach(c => c && c.destroy());
+  const t = STATE.trend;
+  charts.trend = new Chart(document.getElementById('chTrend'), {
+    type:'line',
+    data:{ labels:t.map(x => idShort(x.date)), datasets:[{ label:'Titik panas', data:t.map(x => x.n),
+      borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.15)', fill:true, tension:.35, pointRadius:3 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false },
+      tooltip:{ callbacks:{ label: c => ' ' + fmt(c.parsed.y) + ' titik' } } },
+      scales:{ x:{ ticks:tick, grid:{ display:false } }, y:{ ticks:tick, grid } } }
+  });
+  const pc = STATE.provCounts.slice(0,10);
+  charts.prov = new Chart(document.getElementById('chProv'), {
+    type:'bar',
+    data:{ labels:pc.map(x => { const n = tc(x.name); return n.length > 16 ? n.slice(0,15)+'…' : n; }),
+      datasets:[
+        { label:'Berisiko tinggi', data:pc.map(x => x.hi), backgroundColor:'#ef4444', borderRadius:4 },
+        { label:'Lainnya', data:pc.map(x => x.n - x.hi), backgroundColor:'#f59e0b', borderRadius:4 } ] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#94a3b8', font:{ size:9 } } },
+        tooltip:{ callbacks:{ label: c => ` ${c.dataset.label}: ${fmt(c.parsed.x)} titik` } } },
+      scales:{ x:{ stacked:true, ticks:tick, grid }, y:{ stacked:true, ticks:{ ...tick, font:{ size:9 } }, grid:{ display:false } } } }
+  });
+  const hi = STATE.pts.filter(p => p.conf >= 9).length;
+  const mid = STATE.pts.filter(p => p.conf === 8).length;
+  const low = STATE.pts.filter(p => p.conf <= 7).length;
+  charts.conf = new Chart(document.getElementById('chConf'), {
+    type:'doughnut',
+    data:{ labels:['Hampir pasti (9/10)','Kemungkinan besar (8/10)','Perlu dicek (7/10)'],
+      datasets:[{ data:[hi,mid,low], backgroundColor:['#ef4444','#f59e0b','#38bdf8'], borderWidth:0 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'58%',
+      plugins:{ legend:{ position:'bottom', labels:{ color:'#94a3b8', font:{ size:9 }, boxWidth:10 } },
+        tooltip:{ callbacks:{ label: c => ` ${c.label}: ${fmt(c.parsed)} titik` } } } }
+  });
+}
+
+/* ---------------- TABEL ---------------- */
+function filtered() {
+  const q = document.getElementById('q').value.trim().toLowerCase();
+  const pv = document.getElementById('fProv').value;
+  const rk = document.getElementById('fRisk').value;
+  return STATE.pts.filter(p =>
+    (!q || p.prov.toLowerCase().includes(q) || p.kab.toLowerCase().includes(q) || p.kec.toLowerCase().includes(q)) &&
+    (!pv || p.prov.toUpperCase() === pv) &&
+    (!rk || String(p.conf) === rk));
+}
+function fillProvFilter() {
+  const sel = document.getElementById('fProv');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Semua provinsi</option>' +
+    STATE.provCounts.map(p => `<option value="${esc(p.name.toUpperCase())}">${esc(tc(p.name))} (${p.n})</option>`).join('');
+  sel.value = cur;
+}
+function renderTable() {
+  const rows = filtered();
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  if (page > pages) page = pages;
+  const slice = rows.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
+  document.getElementById('tbody').innerHTML = slice.map(p => {
+    const r = RISK[p.conf] || RISK[7];
+    return `<tr class="hover:bg-slate-800/60 transition cursor-pointer" data-i="${p.i}">
+      <td class="p-3 font-mono text-slate-400">${esc(p.time)}<br><span class="text-[10px] text-slate-600">${idShort(p.date)}</span></td>
+      <td class="p-3"><span class="font-semibold text-white">${esc(tc(p.kab))}</span><br><span class="text-[11px] text-slate-400">${esc(tc(p.kec))} · ${esc(tc(p.prov))}</span></td>
+      <td class="p-3"><span class="chip ${r.cls}">${p.conf}/10</span></td>
+      <td class="p-3 text-slate-400">${esc(p.sat)}</td>
+      <td class="p-3 ${p.conf>=9?'text-red-400 font-bold':p.conf>=8?'text-amber-400':'text-sky-300'}">${r.label}</td>
+      <td class="p-3 text-right"><button class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-amber-400 font-medium text-[11px]" data-i="${p.i}"><i class="fa-solid fa-crosshairs"></i> Lihat</button></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="6" class="p-6 text-center text-slate-500">Tidak ada titik yang cocok dengan pencarian.</td></tr>`;
+
+  document.getElementById('pgInfo').textContent =
+    `Menampilkan ${slice.length ? ((page-1)*PAGE_SIZE+1) : 0}–${Math.min(page*PAGE_SIZE, rows.length)} dari ${fmt(rows.length)} titik`;
+  document.getElementById('pgPrev').disabled = page <= 1;
+  document.getElementById('pgNext').disabled = page >= pages;
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-i]');
+  if (!el || !STATE.pts.length) return;
+  const p = STATE.pts[+el.dataset.i];
+  if (p) selectPoint(p);
+});
+function setPage(n) { const max = Math.max(1, Math.ceil(filtered().length / PAGE_SIZE)); page = Math.min(Math.max(1, n), max); renderTable(); }
+
+function exportCSV() {
+  const rows = filtered();
+  let csv = 'Waktu,Tanggal,Provinsi,Kabupaten,Kecamatan,Lintang,Bujur,Kepastian,Satelit,Status\n';
+  rows.forEach(p => { csv += `${p.time},${p.date},"${p.prov}","${p.kab}","${p.kec}",${p.lat},${p.lon},${p.conf},"${p.sat}","${(RISK[p.conf]||RISK[7]).label}"\n`; });
+  const url = URL.createObjectURL(new Blob([csv], { type:'text/csv;charset=utf-8;' }));
+  const a = document.createElement('a'); a.href = url; a.download = `titik-panas-${STATE.date}.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ---------------- REFRESH LIVE ---------------- */
+async function fetchWithTimeout(url, ms = 22000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try { const r = await fetch(url, { signal: ctrl.signal, redirect:'follow' }); clearTimeout(t); return r; }
+  catch (e) { clearTimeout(t); throw e; }
+}
+async function fetchHotspotFile(dateStr) {
+  const compact = dateStr.replace(/-/g,'');
+  const target = `${SRC}${compact}/hotspot_${compact}.txt`;
+  let lastErr;
+  for (const px of PROXIES) {
+    try {
+      const r = await fetchWithTimeout(px(target));
+      if (!r.ok) { lastErr = new Error('HTTP ' + r.status); continue; }
+      const txt = await r.text();
+      const pts = parsePoints(txt);
+      if (pts.length) return pts;
+      lastErr = new Error('data kosong');
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error('semua proxy gagal');
+}
+let refreshing = false;
+async function refreshLive() {
+  if (refreshing) return;
+  refreshing = true;
+  setStateStatus('loading');
+  const today = new Date();
+  for (let back = 0; back <= 3; back++) {
+    const d = new Date(today.getTime() - back * 86400000);
+    const iso = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    try {
+      const pts = (await fetchHotspotFile(iso)).map((p, i) => ({ ...p, i, date: iso }));
+      STATE.pts = pts; window.__PT = pts;
+      STATE.date = iso; STATE.provCounts = statFromPoints(pts);
+      STATE.trend = buildTrend(iso, pts.length);
+      STATE.live = true; STATE.fetchedAt = new Date().toISOString();
+      page = 1;
+      renderAll(); setStateStatus('ok');
+      refreshing = false;
+      return;
+    } catch (e) { /* lanjut ke hari sebelumnya */ }
+  }
+  refreshing = false;
+  setStateStatus('fail');
+}
+function buildTrend(liveDate, liveCount) {
+  const t = STATE.trend.slice();
+  if (!t.length) return [{ date: liveDate, n: liveCount }];
+  const last = t[t.length - 1];
+  if (last.date === liveDate) { last.n = liveCount; return t.slice(-7); }
+  if (last.date > liveDate) return t.slice(-7);
+  t.push({ date: liveDate, n: liveCount });
+  return t.slice(-7);
+}
+function setStateStatus(kind) {
+  const el = document.getElementById('dataStatus');
+  if (kind === 'loading') el.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-amber-400"></i> Menghubungi server BMKG…`;
+  else if (kind === 'fail') el.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Live tidak tersedia — memakai snapshot ${STATE.date}`;
+  else if (kind === 'ok') el.innerHTML = `<i class="fa-solid fa-circle text-emerald-400 text-[8px]"></i> Data langsung BMKG ${STATE.date}`;
+  else if (kind === 'error') el.innerHTML = `<i class="fa-solid fa-circle-xmark text-red-400"></i> ${esc(arguments[1] || 'Kesalahan data')}`;
+}
+
+/* ---------------- ANALISIS (AI / lokal) ---------------- */
+function openAI() { const m = document.getElementById('aiModal'); m.classList.remove('hidden'); m.classList.add('flex'); }
+function closeAI() { const m = document.getElementById('aiModal'); m.classList.add('hidden'); m.classList.remove('flex'); if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+
+function localAnalysis() {
+  const total = STATE.pts.length, hi = STATE.pts.filter(p => p.conf >= 9).length;
+  const c = STATE.provCounts.slice(0,3);
+  const t = STATE.trend;
+  const delta = t.length >= 2 ? Math.round((t[t.length-1].n - t[t.length-2].n) / t[t.length-2].n * 100) : 0;
+  const g = windGrid ? windGrid[Math.floor(windGrid.length/2)] : null;
+  const windPart = g
+    ? `Angin dominan bertiup dari <b>${dirFrom(g.dir)}</b> dengan kecepatan sekitar <b>${Math.round(g.spd)} km/jam</b>, sehingga asap bergerak ke arah <b>${dirTo(g.dir)}</b>.`
+    : `Data angin belum tersedia, sehingga arah sebaran asap belum dapat dipastikan.`;
+  return `
+  <p><b>Ringkasan keadaan (${idDate(STATE.date)}).</b> Satelit mendeteksi <b>${fmt(total)}</b> titik panas di Indonesia, dengan <b>${fmt(hi)}</b> di antaranya berada pada tingkat kepastian tertinggi (9/10) sehingga patut dianggap nyata. Jumlah titik ${delta >= 0 ? 'naik' : 'turun'} <b>${Math.abs(delta)}%</b> dibanding hari sebelumnya.</p>
+  <p><b>Wilayah paling terdampak.</b> ${c.map(x => `<b>${esc(tc(x.name))}</b> (${fmt(x.n)} titik, ${fmt(x.hi)} berisiko tinggi)`).join(', ')}. ${windPart}</p>
+  <p><b>Rekomendasi untuk masyarakat.</b> Warga di sekitar wilayah tersebut sebaiknya mengurangi aktivitas di luar ruangan, menyiapkan masker N95, dan memantau informasi resmi dari BMKG serta Pemerintah Daerah. Petugas di lapangan perlu memprioritaskan verifikasi titik berwarna merah, terutama yang dekat dengan pemukiman, lahan gambut, dan kawasan hutan. Laporkan bila melihat asap atau api ke 112 (Basarnas) atau 113 (Pemadam Kebakaran).</p>
+  <p class="text-[11px] text-slate-500">Catatan: analisis ini dihitung secara lokal dari data BMKG tanpa memakai model AI. Isi API key pada Pengaturan untuk laporan yang lebih mendalam.</p>`;
+}
+
+async function runAnalysis() {
+  openAI();
+  const body = document.getElementById('aiBody');
+  body.innerHTML = `<div class="flex items-center justify-center py-8 text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl mr-3 text-purple-400"></i> Menyusun analisis…</div>`;
+  const key = localStorage.getItem('sk_gemini_key') || '';
+  const model = localStorage.getItem('sk_gemini_model') || 'gemini-2.5-flash';
+
+  if (!key) {
+    document.getElementById('aiMode').textContent = 'Analisis lokal (aturan) — tanpa API key';
+    body.innerHTML = localAnalysis(); lastAI = body.innerText; return;
+  }
+
+  const top = STATE.provCounts.slice(0,6);
+  const sample = STATE.pts.filter(p => p.conf >= 9).slice(0,25).map(p =>
+    `${p.kec}/${p.kab}/${p.prov} (${p.lat},${p.lon}) kepastian ${p.conf}/10 pukul ${p.time}`);
+  const g = windGrid ? windGrid[Math.floor(windGrid.length/2)] : null;
+  const prompt = `Anda adalah analis karhutla untuk masyarakat umum Indonesia. Tulis dalam bahasa Indonesia sederhana (mudah dipahami orang awam), maksimal 4 paragraf pendek + 4 poin rekomendasi.
+Data BMKG ${idDate(STATE.date)}: total ${STATE.pts.length} titik panas, ${STATE.pts.filter(p=>p.conf>=9).length} berisiko tinggi (9/10).
+Provinsi terdampak: ${top.map(x=>`${tc(x.name)}=${x.n} titik (${x.hi} tinggi)`).join('; ')}.
+Tren 7 hari: ${STATE.trend.map(x=>x.date+'='+x.n).join(', ')}.
+Angin: ${g ? `dari ${dirFrom(g.dir)} ${Math.round(g.spd)} km/j (asap ke ${dirTo(g.dir)})` : 'tidak tersedia'}.
+Contoh titik berisiko tinggi: ${sample.join(' | ')}.
+Isi analisis: (1) kondisi & wilayah paling bahaya, (2) ke mana asap kemungkinan bergerak, (3) saran warga, (4) saran petugas/Manggala Agni.`;
+
+  try {
+    const r = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, 30000);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    const text = j?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error('respons kosong');
+    document.getElementById('aiMode').textContent = 'Diproses dengan Google Gemini · ' + model;
+    body.innerHTML = text.split(/\n{2,}/).map(p => `<p>${esc(p).replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</p>`).join('');
+    lastAI = text;
+  } catch (e) {
+    document.getElementById('aiMode').textContent = 'Gemini gagal (' + e.message + ') — memakai analisis lokal';
+    body.innerHTML = localAnalysis(); lastAI = body.innerText;
+  }
+}
+let lastAI = '';
+function speakAI() {
+  if (!lastAI || !('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(lastAI.replace(/[*#]/g,''));
+  u.lang = 'id-ID'; u.rate = 1; speechSynthesis.speak(u);
+}
+
+/* ---------------- PENGATURAN ---------------- */
+function openSettings() {
+  document.getElementById('setKey').value = localStorage.getItem('sk_gemini_key') || '';
+  document.getElementById('setModel').value = localStorage.getItem('sk_gemini_model') || 'gemini-2.5-flash';
+  const m = document.getElementById('setModal'); m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeSettings() { const m = document.getElementById('setModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+function saveSettings() {
+  localStorage.setItem('sk_gemini_key', document.getElementById('setKey').value.trim());
+  localStorage.setItem('sk_gemini_model', document.getElementById('setModel').value.trim() || 'gemini-2.5-flash');
+  closeSettings();
+}
+function clearKey() { localStorage.removeItem('sk_gemini_key'); document.getElementById('setKey').value = ''; }
+
+/* ---------------- RENDER UTAMA ---------------- */
+function renderAll() {
+  renderMarkers(); renderHeat(); renderCharts(); fillProvFilter(); renderTable(); renderMetrics();
+  if (!map._loadedDone) { fitToData(); map._loadedDone = true; }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  if (fromSnapshot()) {
+    renderAll();
+    document.getElementById('mapLoading').style.display = 'none';
+    loadProvinces(); loadWind();
+    refreshLive();
+  } else {
+    document.getElementById('mapLoading').innerHTML = '<div class="text-center text-red-400 text-sm p-6">data/snapshot.js tidak ditemukan — jalankan tools/build_snapshot.pl</div>';
+  }
+  setInterval(() => { if (!document.hidden) refreshLive(); }, 15 * 60 * 1000);
+});
+</script>
+</body>
+</html>
