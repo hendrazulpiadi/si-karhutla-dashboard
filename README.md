@@ -37,6 +37,7 @@ tidak pernah dihitung. Dipertahankan hanya sebagai arsip referensi UI.
 | Kualitas udara | **Open-Meteo Air Quality** (PM2.5 + US AQI) | ✅ live |
 | Arah angin nasional | Open-Meteo multi-lokasi (grid 7×16 = 112 titik, 1 request) | ✅ live |
 | Batas provinsi | GeoJSON 38 provinsi (raw.githubusercontent, ACAO `*`) | ✅ live |
+| Citra harian NASA | **NASA APOD** `https://api.nasa.gov/planetary/apod` (Astronomy Picture of the Day, API key gratis) | ✅ live |
 | Riwayat 7 hari | Snapshot hasil pengunduhan file BMKG 11–17 Okt 2026 | ✅ ter-embed |
 
 **Hasil data teruji (17 Okt 2026):** 13.275 baris mentah → **5.374 titik unik** (dedup 0,01°),

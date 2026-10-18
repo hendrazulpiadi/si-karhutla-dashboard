@@ -234,6 +234,21 @@ tailwind.config = {
     </div>
   </div>
 
+  <!-- ================= CITRA NASA (APOD) ================= -->
+  <div class="bg-slate-900/90 rounded-2xl border border-slate-800 overflow-hidden">
+    <div class="p-4 border-b border-slate-800 flex flex-wrap justify-between items-center gap-3">
+      <div>
+        <h2 class="font-bold text-white text-base flex items-center gap-2"><i class="fa-solid fa-meteor text-purple-400"></i> Citra NASA hari ini (APOD)</h2>
+        <p class="text-xs text-slate-400">Astronomy Picture of the Day — gambar langit &amp; antariksa pilihan NASA, diambil langsung dari API resmi <span class="text-cyan-400">api.nasa.gov</span></p>
+      </div>
+      <button onclick="loadApod(true)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-rotate text-cyan-400"></i> Muat ulang</button>
+    </div>
+    <div id="apodBody" class="p-4 text-xs text-slate-400">
+      <i class="fa-solid fa-circle-notch fa-spin text-amber-400"></i> Mengambil citra dari NASA…
+    </div>
+  </div>
+
   <!-- ================= TABEL ================= -->
   <div class="bg-slate-900/90 rounded-2xl border border-slate-800 overflow-hidden">
     <div class="p-4 border-b border-slate-800 flex flex-wrap justify-between items-center gap-3">
@@ -299,7 +314,7 @@ tailwind.config = {
 
 <footer class="border-t border-slate-800 bg-slate-950 py-5 mt-4">
   <div class="max-w-7xl mx-auto px-4 text-[11px] text-slate-500 flex flex-wrap gap-x-6 gap-y-2 justify-between">
-    <div>Sumber data: <span class="text-slate-400">BMKG CEWS</span> (deteksi titik panas satelit VIIRS/MODIS — NOAA-20, SNPP, Terra, Aqua) · <span class="text-slate-400">Open-Meteo</span> (cuaca, jarak pandang, kualitas udara) · <span class="text-slate-400">OpenStreetMap / CARTO / Esri</span> (peta dasar)</div>
+    <div>Sumber data: <span class="text-slate-400">BMKG CEWS</span> (deteksi titik panas satelit VIIRS/MODIS — NOAA-20, SNPP, Terra, Aqua) · <span class="text-slate-400">Open-Meteo</span> (cuaca, jarak pandang, kualitas udara) · <span class="text-slate-400">OpenStreetMap / CARTO / Esri</span> (peta dasar) · <span class="text-slate-400">NASA APOD</span> (citra harian antariksa)</div>
     <div id="footStamp">—</div>
   </div>
 </footer>
@@ -982,6 +997,45 @@ function speakAI() {
   u.lang = 'id-ID'; u.rate = 1; speechSynthesis.speak(u);
 }
 
+/* ---------------- CITRA NASA (APOD) ---------------- */
+const NASA_API_KEY = '33fw1m2y5R2WRYu5Rk1HtXeEPzI05vzIbaaFBNf8';
+let apodLoaded = false;
+async function loadApod(force) {
+  if (apodLoaded && !force) return;
+  const body = document.getElementById('apodBody');
+  body.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-amber-400"></i> Mengambil citra dari NASA…';
+  try {
+    const r = await fetchWithTimeout(
+      `https://api.nasa.gov/planetary/apod?api_key=${encodeURIComponent(NASA_API_KEY)}`, 20000);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    const media = j.media_type === 'video'
+      ? `<div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-950" style="aspect-ratio:16/9">
+           <iframe src="${esc(j.url)}" class="w-full h-full" allowfullscreen frameborder="0" title="${esc(j.title)}"></iframe>
+         </div>`
+      : `<a href="${esc(j.hdurl || j.url)}" target="_blank" rel="noopener" title="Buka resolusi penuh">
+           <img src="${esc(j.url)}" alt="${esc(j.title)}" loading="lazy" class="w-full rounded-xl border border-slate-800 object-cover" style="max-height:320px">
+         </a>`;
+    body.innerHTML = `
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>${media}</div>
+        <div class="space-y-2">
+          <div class="font-bold text-white text-sm leading-snug">${esc(j.title)}</div>
+          <div class="text-[10px] text-slate-500 font-mono">${esc(j.date)}${j.copyright ? ' · © ' + esc(j.copyright.trim()) : ' · NASA APOD'}</div>
+          <p class="text-slate-300 text-[11px] leading-relaxed max-h-[200px] overflow-y-auto scroll pr-2">${esc(j.explanation)}</p>
+          <a href="https://apod.nasa.gov/apod/ap${String(j.date).replace(/-/g,'').slice(2)}.html" target="_blank" rel="noopener"
+             class="inline-flex items-center gap-1.5 text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold">
+             <i class="fa-solid fa-arrow-up-right-from-square"></i> Halaman resmi APOD</a>
+        </div>
+      </div>`;
+    apodLoaded = true;
+  } catch (e) {
+    body.innerHTML = `<div class="flex items-center gap-2 text-amber-400">
+      <i class="fa-solid fa-triangle-exclamation"></i> Citra NASA tidak dapat dimuat (${esc(e.message)}).
+      <button onclick="loadApod(true)" class="underline hover:text-amber-300">Coba lagi</button></div>`;
+  }
+}
+
 /* ---------------- PENGATURAN ---------------- */
 function openSettings() {
   document.getElementById('setKey').value = localStorage.getItem('sk_gemini_key') || '';
@@ -1007,7 +1061,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (fromSnapshot()) {
     renderAll();
     document.getElementById('mapLoading').style.display = 'none';
-    loadProvinces(); loadWind();
+    loadProvinces(); loadWind(); loadApod();
     refreshLive();
   } else {
     document.getElementById('mapLoading').innerHTML = '<div class="text-center text-red-400 text-sm p-6">data/snapshot.js tidak ditemukan — jalankan tools/build_snapshot.pl</div>';
